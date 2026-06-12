@@ -10,8 +10,9 @@ RUN uv pip install --system --no-cache -e "." && \
 
 COPY service/app ./app
 COPY service/templates ./templates
-COPY service/static ./static 2>/dev/null || true
 COPY service/seed.py ./seed.py
+
+RUN mkdir -p ./static
 
 EXPOSE 10000
 
