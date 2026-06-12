@@ -27,7 +27,7 @@ def get_database_url() -> str:
 DB_URL = get_database_url()
 
 _engine_kwargs: dict = {"echo": False}
-if "asyncpg" in DB_URL and "localhost" not in DB_URL:
+if "asyncpg" in DB_URL and ".render.com" in DB_URL:
     _ssl_ctx = ssl_module.create_default_context()
     _ssl_ctx.check_hostname = False
     _ssl_ctx.verify_mode = ssl_module.CERT_NONE
