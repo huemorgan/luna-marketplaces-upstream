@@ -1,0 +1,13 @@
+{
+  "payload": {
+    "signed_at": 1781285664,
+    "expires_at": 1781890464,
+    "version": 1
+  },
+  "signatures": [
+    {
+      "keyid": "061b95df484f40888462d51f89c84a78c8fe3b631c19c7d7646ff5cc0a5962b2",
+      "sig": "04f2281120f10c8ebd91478089fc347f1a4b431ccc6784c95433abf117c44183be7baceaf1a997750d86fc2bca218fd1872a4898e98e55845402dc8a10fc5004"
+    }
+  ]
+}

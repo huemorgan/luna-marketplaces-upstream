@@ -1,0 +1,28 @@
+{
+  "payload": {
+    "name": "hello-knowhow",
+    "namespace": "demo",
+    "versions": [
+      {
+        "version": "1.0.0",
+        "artifact_hash": "75df41e65cd4985b75fd959859a0eedb2f84ecb2d3f1a2f394c06fa5f74c3e6b",
+        "manifest_hash": "924a789c86a8ea7e9026045222f0b1822a24fc74e538e4e6d79daeeea784d27f",
+        "published_at": 1781285664,
+        "yanked": false,
+        "compat": {
+          "sdk": "^1.0",
+          "requires": {
+            "skills": ">=1"
+          }
+        }
+      }
+    ],
+    "latest": "1.0.0"
+  },
+  "signatures": [
+    {
+      "keyid": "061b95df484f40888462d51f89c84a78c8fe3b631c19c7d7646ff5cc0a5962b2",
+      "sig": "af8eac9c91ee7bfe52822f875b4f03a93111e967395773e2c1920664451df3afd59cab04186e7b7413b9709cc8915c37b76ab6408c1080faf487c3acdff20605"
+    }
+  ]
+}

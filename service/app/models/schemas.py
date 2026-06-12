@@ -1,0 +1,103 @@
+"""Pydantic schemas for API request/response."""
+
+from __future__ import annotations
+
+from pydantic import BaseModel, Field
+
+
+class UserCreate(BaseModel):
+    email: str
+    username: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    username: str
+    created_at: int
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class OrgCreate(BaseModel):
+    name: str
+    slug: str
+
+
+class OrgResponse(BaseModel):
+    id: str
+    name: str
+    slug: str
+    plan: str
+    created_at: int
+
+
+class MarketplaceCreate(BaseModel):
+    name: str
+    slug: str
+    description: str = ""
+    visibility: str = "public"
+
+
+class MarketplaceResponse(BaseModel):
+    id: str
+    name: str
+    slug: str
+    description: str
+    visibility: str
+    signing_key_public: str | None = None
+    access_token: str | None = None
+    created_at: int
+    plugin_count: int = 0
+
+
+class PluginResponse(BaseModel):
+    id: str
+    name: str
+    namespace: str
+    description: str
+    readme: str
+    tags: list[str]
+    license: str
+    icon_url: str | None
+    source_url: str | None
+    latest_version: str | None
+    download_count: int
+    created_at: int
+    updated_at: int
+    requires_tools: bool
+    requires_ui_iframe: bool
+    requires_settings_tab: bool
+    requires_vault_access: bool
+    requires_egress: list[str]
+    tool_count: int
+    tool_policies: list[dict]
+    marketplace_slug: str = ""
+    marketplace_name: str = ""
+
+
+class PluginVersionResponse(BaseModel):
+    id: str
+    version: str
+    artifact_hash: str
+    sdk_compat: str
+    capabilities_required: dict
+    published_at: int
+    yanked: bool
+
+
+class PluginPublish(BaseModel):
+    """Metadata submitted alongside the artifact upload."""
+    manifest: dict
+
+
+class CatalogFilter(BaseModel):
+    tags: list[str] = Field(default_factory=list)
+    license: str | None = None
+    requires_ui: bool | None = None
+    requires_vault: bool | None = None
+    search: str | None = None

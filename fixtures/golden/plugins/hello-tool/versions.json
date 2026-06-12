@@ -1,0 +1,28 @@
+{
+  "payload": {
+    "name": "hello-tool",
+    "namespace": "demo",
+    "versions": [
+      {
+        "version": "1.0.0",
+        "artifact_hash": "2ccdae0e9ec877114de0b5ec7134b22b921f136e30278eea6f2033a3b11a10ad",
+        "manifest_hash": "00f8f6fe5ba20f943c90856509c20dd4ecbc259479293f2d850fb97c53dae832",
+        "published_at": 1781285664,
+        "yanked": false,
+        "compat": {
+          "sdk": "^1.0",
+          "requires": {
+            "tools": ">=1"
+          }
+        }
+      }
+    ],
+    "latest": "1.0.0"
+  },
+  "signatures": [
+    {
+      "keyid": "061b95df484f40888462d51f89c84a78c8fe3b631c19c7d7646ff5cc0a5962b2",
+      "sig": "b2e11b3bbfe22547e30d06b34ac9ea1adaa424c746a754804fd59a7fb76cb0cd187f721e9b4ca04bc236b6cbbd2518b7fcd83df2f203aea842c92d52c1c1a50e"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+    "name": "hello-tool",
+    "namespace": "demo",
+    "version": "1.0.0",
+    "description": "A demo plugin that provides a simple greeting tool",
+    "license": "MIT",
+    "tags": ["demo", "greeting", "tools"],
+    "compat": {
+        "sdk": "^1.0",
+        "requires": {"tools": ">=1"}
+    },
+    "provenance": {
+        "source": "https://github.com/demo/hello-tool"
+    },
+    "permissions": {
+        "tools": [
+            {"name": "greet", "policy": "auto_approve", "description": "Greet a user by name"}
+        ],
+        "egress_hosts": [],
+        "vault_access": false,
+        "ui_iframe": false,
+        "settings_tab": false
+    },
+    "readme": "# Hello Tool\n\nA minimal demo plugin for the Luna marketplace protocol.\n\n## Usage\n\nOnce installed, Luna gains a `greet` tool that says hello to anyone.\n\n## Example\n\n> Luna, greet Alice\n\n*Hello, Alice! Nice to meet you. 🌙*"
+}

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plugin Details — Luna Marketplace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0f0f13; --surface: #1a1a22; --surface-hover: #22222e;
+            --border: #2a2a36; --text: #e8e8ed; --text-muted: #8b8b9e;
+            --accent: #7c6cf0; --accent-glow: rgba(124, 108, 240, 0.15);
+            --green: #4ade80; --amber: #fbbf24; --red: #f87171; --blue: #60a5fa;
+            --radius: 12px;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .header {
+            background: var(--surface); border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem; position: sticky; top: 0; z-index: 100;
+        }
+        .header-inner { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; gap: 1rem; }
+        .back-link { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; }
+        .back-link:hover { color: var(--accent); }
+        .logo { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+        .logo-icon { width: 28px; height: 28px; background: linear-gradient(135deg, var(--accent), #a78bfa); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .main { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+        .plugin-header { display: flex; align-items: flex-start; gap: 1.5rem; margin-bottom: 2rem; }
+        .plugin-icon { width: 72px; height: 72px; border-radius: 14px; background: linear-gradient(135deg, var(--accent), #a78bfa); display: flex; align-items: center; justify-content: center; font-size: 32px; flex-shrink: 0; }
+        .plugin-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .plugin-namespace { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+        .plugin-version { display: inline-block; font-size: 0.75rem; color: var(--accent); background: var(--accent-glow); padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 500; }
+        .plugin-description { color: var(--text-muted); font-size: 1rem; line-height: 1.6; margin-bottom: 2rem; }
+        .section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; }
+        .section-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .tag { font-size: 0.75rem; padding: 0.3rem 0.7rem; background: rgba(255,255,255,0.05); border-radius: 4px; color: var(--text-muted); }
+        .requirements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+        .req-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border); }
+        .req-icon { font-size: 1.2rem; }
+        .req-label { font-size: 0.8rem; color: var(--text-muted); }
+        .req-value { font-size: 0.85rem; font-weight: 500; }
+        .tools-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .tool-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border); }
+        .tool-name { font-family: monospace; font-size: 0.85rem; color: var(--blue); }
+        .tool-policy { font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 3px; }
+        .tool-policy.auto_approve { background: rgba(74,222,128,0.1); color: var(--green); }
+        .tool-policy.prompt_always { background: rgba(248,113,113,0.1); color: var(--red); }
+        .tool-policy.prompt_first_time_only { background: rgba(251,191,36,0.1); color: var(--amber); }
+        .readme { line-height: 1.7; color: var(--text-muted); }
+        .readme h1, .readme h2, .readme h3 { color: var(--text); margin: 1rem 0 0.5rem; }
+        .readme code { background: rgba(255,255,255,0.05); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.85em; }
+        .readme pre { background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; }
+        .install-cmd { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; font-family: monospace; font-size: 0.85rem; color: var(--green); display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+        .versions-table { width: 100%; border-collapse: collapse; }
+        .versions-table th { text-align: left; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+        .versions-table td { padding: 0.6rem 0; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .versions-table .ver { color: var(--accent); font-weight: 500; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo"><div class="logo-icon">🌙</div> Luna Marketplace</div>
+            <a class="back-link" id="back-link" href="#">← Back to catalog</a>
+        </div>
+    </header>
+
+    <main class="main" id="content">
+        <div style="color: var(--text-muted); padding: 4rem; text-align: center;">Loading...</div>
+    </main>
+
+    <script>
+        const mpSlug = window.location.pathname.split('/marketplace/')[1]?.split('/plugin/')[0] || 'official';
+        const pluginName = window.location.pathname.split('/plugin/')[1] || '';
+        const ICONS = ['🔧','📊','🔌','🧠','💬','📁','🔐','🎨','📈','⚡','🌐','📋','🛡️','🔔','📦'];
+        function getIcon(name) { let h=0; for(let i=0;i<name.length;i++) h=((h<<5)-h)+name.charCodeAt(i); return ICONS[Math.abs(h)%ICONS.length]; }
+
+        document.getElementById('back-link').href = `/marketplace/${mpSlug}`;
+
+        async function load() {
+            const [pluginRes, versionsRes] = await Promise.all([
+                fetch(`/api/catalog/${mpSlug}/${pluginName}`),
+                fetch(`/api/catalog/${mpSlug}/${pluginName}/versions`),
+            ]);
+            if (!pluginRes.ok) { document.getElementById('content').innerHTML = '<div style="text-align:center;padding:4rem;color:var(--text-muted)">Plugin not found</div>'; return; }
+            const p = await pluginRes.json();
+            const versions = versionsRes.ok ? await versionsRes.json() : [];
+
+            document.title = `${p.name} — Luna Marketplace`;
+            document.getElementById('content').innerHTML = `
+                <div class="plugin-header">
+                    <div class="plugin-icon">${p.icon_url || getIcon(p.name)}</div>
+                    <div>
+                        <div class="plugin-title">${p.name}</div>
+                        <div class="plugin-namespace">${p.namespace}/${p.name}</div>
+                        ${p.latest_version ? `<span class="plugin-version">v${p.latest_version}</span>` : ''}
+                    </div>
+                </div>
+
+                <div class="install-cmd">
+                    <span>/marketplace install ${p.namespace}/${p.name}</span>
+                    <span style="color:var(--text-muted);font-size:0.75rem">Luna command</span>
+                </div>
+
+                <div class="plugin-description">${p.description}</div>
+
+                ${p.tags.length ? `<div class="section"><div class="section-title">🏷️ Tags</div><div class="tags">${p.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div></div>` : ''}
+
+                <div class="section">
+                    <div class="section-title">📋 Requirements from Luna</div>
+                    <div class="requirements-grid">
+                        <div class="req-item"><span class="req-icon">⚡</span><div><div class="req-label">Tools</div><div class="req-value">${p.tool_count} tool${p.tool_count!==1?'s':''}</div></div></div>
+                        <div class="req-item"><span class="req-icon">🖼️</span><div><div class="req-label">UI Panel</div><div class="req-value">${p.requires_ui_iframe ? 'Yes' : 'No'}</div></div></div>
+                        <div class="req-item"><span class="req-icon">⚙️</span><div><div class="req-label">Settings Tab</div><div class="req-value">${p.requires_settings_tab ? 'Yes' : 'No'}</div></div></div>
+                        <div class="req-item"><span class="req-icon">🔐</span><div><div class="req-label">Vault Access</div><div class="req-value">${p.requires_vault_access ? 'Yes' : 'No'}</div></div></div>
+                        <div class="req-item"><span class="req-icon">🌐</span><div><div class="req-label">Network Egress</div><div class="req-value">${(p.requires_egress||[]).length > 0 ? p.requires_egress.join(', ') : 'None'}</div></div></div>
+                        <div class="req-item"><span class="req-icon">📄</span><div><div class="req-label">License</div><div class="req-value">${p.license}</div></div></div>
+                    </div>
+                </div>
+
+                ${p.tool_policies && p.tool_policies.length ? `
+                <div class="section">
+                    <div class="section-title">⚡ Declared Tools</div>
+                    <div class="tools-list">
+                        ${p.tool_policies.map(t => `
+                            <div class="tool-item">
+                                <div>
+                                    <span class="tool-name">${t.name}</span>
+                                    ${t.description ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.2rem">${t.description}</div>` : ''}
+                                </div>
+                                <span class="tool-policy ${t.policy}">${t.policy.replace(/_/g,' ')}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>` : ''}
+
+                ${versions.length ? `
+                <div class="section">
+                    <div class="section-title">📦 Versions</div>
+                    <table class="versions-table">
+                        <thead><tr><th>Version</th><th>SDK</th><th>Published</th><th>Status</th></tr></thead>
+                        <tbody>
+                            ${versions.map(v => `<tr>
+                                <td class="ver">${v.version}</td>
+                                <td>${v.sdk_compat}</td>
+                                <td>${new Date(v.published_at * 1000).toLocaleDateString()}</td>
+                                <td>${v.yanked ? '<span style="color:var(--red)">Yanked</span>' : '<span style="color:var(--green)">Active</span>'}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>` : ''}
+
+                ${p.readme ? `<div class="section"><div class="section-title">📖 README</div><div class="readme">${simpleMarkdown(p.readme)}</div></div>` : ''}
+
+                ${p.source_url ? `<div style="margin-top:1rem;text-align:center"><a href="${p.source_url}" target="_blank" style="color:var(--accent);text-decoration:none;font-size:0.85rem">View source →</a></div>` : ''}
+            `;
+        }
+
+        function simpleMarkdown(md) {
+            return md
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/`(.+?)`/g, '<code>$1</code>')
+                .replace(/^> (.+)$/gm, '<blockquote style="border-left:3px solid var(--accent);padding-left:1rem;color:var(--text-muted)">$1</blockquote>')
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/^- (.+)$/gm, '<li>$1</li>');
+        }
+
+        load();
+    </script>
+</body>
+</html>

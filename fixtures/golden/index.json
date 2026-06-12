@@ -1,0 +1,39 @@
+{
+  "payload": {
+    "marketplace_id": "demo-marketplace-001",
+    "generated_at": 1781285664,
+    "plugin_count": 2,
+    "plugins": [
+      {
+        "name": "hello-knowhow",
+        "namespace": "demo",
+        "latest_version": "1.0.0",
+        "description": "A demo knowhow pack \u2014 no code, just knowledge content for the agent",
+        "tags": [
+          "demo",
+          "knowhow",
+          "content-only"
+        ],
+        "license": "MIT"
+      },
+      {
+        "name": "hello-tool",
+        "namespace": "demo",
+        "latest_version": "1.0.0",
+        "description": "A demo plugin that provides a simple greeting tool",
+        "tags": [
+          "demo",
+          "greeting",
+          "tools"
+        ],
+        "license": "MIT"
+      }
+    ]
+  },
+  "signatures": [
+    {
+      "keyid": "061b95df484f40888462d51f89c84a78c8fe3b631c19c7d7646ff5cc0a5962b2",
+      "sig": "a8988bc121644e7c81f010e6441c43b07ebf6d87b9ffe78bb3d7df02bfd5b58346d5a68df391b1e2130f34cffe949aab58b38be68b748bf8c9c961d9d7780907"
+    }
+  ]
+}

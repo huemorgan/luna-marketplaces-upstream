@@ -1,0 +1,23 @@
+{
+    "name": "hello-knowhow",
+    "namespace": "demo",
+    "version": "1.0.0",
+    "description": "A demo knowhow pack — no code, just knowledge content for the agent",
+    "license": "MIT",
+    "tags": ["demo", "knowhow", "content-only"],
+    "compat": {
+        "sdk": "^1.0",
+        "requires": {"skills": ">=1"}
+    },
+    "provenance": {
+        "source": "https://github.com/demo/hello-knowhow"
+    },
+    "permissions": {
+        "tools": [],
+        "egress_hosts": [],
+        "vault_access": false,
+        "ui_iframe": false,
+        "settings_tab": false
+    },
+    "readme": "# Hello Knowhow\n\nA content-only demo plugin. No code — just a skill body that teaches Luna about greetings in different cultures.\n\n## What it provides\n\nA skill called `cultural-greetings` that the agent can load when needed."
+}

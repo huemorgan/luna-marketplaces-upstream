@@ -1,0 +1,17 @@
+{
+  "payload": {
+    "signed_at": 1781285664,
+    "version": 1,
+    "files": {
+      "plugins/hello-knowhow/versions.json": "b98fa052105e7883103db9510f4a3b94c444b537e75f58ecdc7ec94230a0759c",
+      "plugins/hello-tool/versions.json": "72cfbfd6b5e451b2e7f16ed557532c6829876352c015c88446960fb1b9dc4e93",
+      "index.json": "7e066a48ed35309dd501eb72a6957a590dd9b59aca554d45aa59f714db849cf8"
+    }
+  },
+  "signatures": [
+    {
+      "keyid": "061b95df484f40888462d51f89c84a78c8fe3b631c19c7d7646ff5cc0a5962b2",
+      "sig": "59d5c951a0cfdfc62d9d11b32e88796212713fff055b6b1e6d627e348a2c2c6917220461c74661c571329ee64fb2c117cc911ca671bd8d06eb414bbe26d8b802"
+    }
+  ]
+}

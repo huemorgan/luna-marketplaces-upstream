@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luna Marketplaces</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0f0f13; --surface: #1a1a22; --surface-2: #22222e;
+            --border: #2a2a36; --text: #e8e8ed; --text-muted: #8b8b9e;
+            --accent: #7c6cf0; --accent-glow: rgba(124, 108, 240, 0.15);
+            --green: #4ade80; --amber: #fbbf24; --red: #f87171; --blue: #60a5fa;
+            --radius: 12px;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        
+        /* Login screen */
+        .login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 3rem; max-width: 420px; width: 90%; text-align: center; }
+        .login-logo { font-size: 3rem; margin-bottom: 1rem; }
+        .login-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .login-subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem; }
+        .btn { display: inline-flex; align-items: center; gap: 0.75rem; padding: 0.8rem 1.5rem; border-radius: 8px; border: none; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-decoration: none; justify-content: center; width: 100%; }
+        .btn-google { background: white; color: #333; border: 1px solid #ddd; margin-bottom: 1rem; }
+        .btn-google:hover { background: #f5f5f5; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: #6b5ce0; transform: translateY(-1px); }
+        .btn-secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--accent); }
+        .btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; width: auto; }
+        .btn-danger { background: rgba(248,113,113,0.1); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+        .divider { display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0; color: var(--text-muted); font-size: 0.8rem; }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .input-group { text-align: left; margin-bottom: 1rem; }
+        .input-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem; font-weight: 500; }
+        .input { width: 100%; padding: 0.7rem 1rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.9rem; outline: none; }
+        .input:focus { border-color: var(--accent); }
+        
+        /* Shell layout */
+        .shell { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; }
+        .sidebar-logo { display: flex; align-items: center; gap: 0.6rem; font-size: 1rem; font-weight: 700; margin-bottom: 2rem; padding: 0 0.5rem; }
+        .sidebar-logo-icon { width: 30px; height: 30px; background: linear-gradient(135deg, var(--accent), #a78bfa); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .nav-section { margin-bottom: 1.5rem; }
+        .nav-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; padding: 0 0.75rem; font-weight: 600; }
+        .nav-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-muted); transition: all 0.15s; }
+        .nav-item:hover { background: var(--surface-2); color: var(--text); }
+        .nav-item.active { background: var(--accent-glow); color: var(--accent); font-weight: 500; }
+        .nav-item-icon { width: 18px; text-align: center; }
+        .sidebar-footer { margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border); }
+        .user-info { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-glow); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .user-name { font-size: 0.8rem; font-weight: 500; }
+        .user-email { font-size: 0.7rem; color: var(--text-muted); }
+        
+        .content { margin-left: 260px; padding: 2rem 3rem; flex: 1; max-width: 1100px; }
+        .page-header { margin-bottom: 2rem; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .page-subtitle { color: var(--text-muted); font-size: 0.85rem; }
+        
+        /* Cards */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; transition: all 0.2s; }
+        .card:hover { border-color: rgba(124,108,240,0.3); }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+        .card-title { font-size: 1rem; font-weight: 600; }
+        .card-subtitle { font-size: 0.8rem; color: var(--text-muted); }
+        .card-badge { font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 500; }
+        .badge-public { background: rgba(74,222,128,0.1); color: var(--green); }
+        .badge-private { background: rgba(251,191,36,0.1); color: var(--amber); }
+        .badge-unlisted { background: rgba(96,165,250,0.1); color: var(--blue); }
+        
+        .empty-card { text-align: center; padding: 3rem; color: var(--text-muted); }
+        .empty-card h3 { color: var(--text); margin-bottom: 0.5rem; font-size: 1.1rem; }
+        
+        /* Grid */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+        .stat-value { font-size: 1.75rem; font-weight: 700; color: var(--accent); }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; width: 90%; max-width: 500px; }
+        .modal-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 1.5rem; }
+        .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+        
+        /* Plugin list in marketplace */
+        .plugin-row { display: flex; align-items: center; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--border); }
+        .plugin-row:last-child { border-bottom: none; }
+        .plugin-row-icon { width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), #a78bfa); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+        .plugin-row-info { flex: 1; }
+        .plugin-row-name { font-weight: 500; font-size: 0.9rem; }
+        .plugin-row-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; }
+        .plugin-row-meta { display: flex; gap: 0.5rem; align-items: center; }
+        .plugin-row-version { font-size: 0.7rem; color: var(--accent); background: var(--accent-glow); padding: 0.1rem 0.4rem; border-radius: 3px; }
+        .plugin-row-tags { display: flex; gap: 0.3rem; }
+        .plugin-row-tag { font-size: 0.65rem; padding: 0.1rem 0.4rem; background: rgba(255,255,255,0.05); border-radius: 3px; color: var(--text-muted); }
+        
+        /* Tabs */
+        .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+        .tab { padding: 0.75rem 1.25rem; font-size: 0.85rem; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab:hover { color: var(--text); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <!-- LOGIN -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-card">
+            <div class="login-logo">🌙</div>
+            <div class="login-title">Luna Marketplaces</div>
+            <div class="login-subtitle">Create and manage plugin marketplaces for the Luna agent platform</div>
+            <button class="btn btn-google" onclick="loginGoogle()">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign in with Google
+            </button>
+            <div class="divider">or</div>
+            <div class="input-group">
+                <label>Email</label>
+                <input class="input" type="email" id="login-email" placeholder="you@company.com">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input class="input" type="password" id="login-password" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" onclick="loginEmail()" style="margin-top:0.5rem">Sign In</button>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:1rem">Don't have an account? <a href="#" onclick="showSignup()" style="color:var(--accent)">Sign up</a></p>
+        </div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div id="signup-screen" class="login-screen hidden">
+        <div class="login-card">
+            <div class="login-logo">🌙</div>
+            <div class="login-title">Create Account</div>
+            <div class="login-subtitle">Start distributing Luna plugins through your own marketplace</div>
+            <button class="btn btn-google" onclick="loginGoogle()">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign up with Google
+            </button>
+            <div class="divider">or</div>
+            <div class="input-group">
+                <label>Username</label>
+                <input class="input" type="text" id="signup-username" placeholder="yourcompany">
+            </div>
+            <div class="input-group">
+                <label>Email</label>
+                <input class="input" type="email" id="signup-email" placeholder="you@company.com">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input class="input" type="password" id="signup-password" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" onclick="signup()" style="margin-top:0.5rem">Create Account</button>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-top:1rem">Already have an account? <a href="#" onclick="showLogin()" style="color:var(--accent)">Sign in</a></p>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="app" class="shell hidden">
+        <aside class="sidebar">
+            <div class="sidebar-logo"><div class="sidebar-logo-icon">🌙</div> Marketplaces</div>
+            <nav class="nav-section">
+                <div class="nav-label">Overview</div>
+                <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+                    <span class="nav-item-icon">📊</span> Dashboard
+                </div>
+            </nav>
+            <nav class="nav-section">
+                <div class="nav-label">My Marketplaces</div>
+                <div id="marketplace-nav"></div>
+                <div class="nav-item" onclick="showCreateMarketplace()" style="margin-top:0.5rem;">
+                    <span class="nav-item-icon">➕</span> New Marketplace
+                </div>
+            </nav>
+            <nav class="nav-section">
+                <div class="nav-label">Browse</div>
+                <div class="nav-item" data-page="official-catalog" onclick="showPage('official-catalog')">
+                    <span class="nav-item-icon">🏪</span> Official Catalog
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">👤</div>
+                    <div>
+                        <div class="user-name" id="user-display-name">User</div>
+                        <div class="user-email" id="user-display-email">user@email.com</div>
+                    </div>
+                </div>
+                <div class="nav-item" onclick="logout()" style="margin-top:0.5rem; color:var(--red);">
+                    <span class="nav-item-icon">🚪</span> Sign out
+                </div>
+            </div>
+        </aside>
+
+        <main class="content">
+            <!-- DASHBOARD -->
+            <div id="page-dashboard">
+                <div class="page-header">
+                    <div class="page-title">Dashboard</div>
+                    <div class="page-subtitle">Manage your plugin marketplaces</div>
+                </div>
+                <div class="grid-2" style="margin-bottom:2rem">
+                    <div class="stat-card"><div class="stat-value" id="stat-marketplaces">0</div><div class="stat-label">Marketplaces</div></div>
+                    <div class="stat-card"><div class="stat-value" id="stat-plugins">0</div><div class="stat-label">Plugins Published</div></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+                    <h3 style="font-size:1rem; font-weight:600;">Your Marketplaces</h3>
+                    <button class="btn btn-primary btn-sm" onclick="showCreateMarketplace()">+ Create Marketplace</button>
+                </div>
+                <div id="marketplace-list"></div>
+            </div>
+
+            <!-- MARKETPLACE DETAIL -->
+            <div id="page-marketplace" class="hidden">
+                <div class="page-header">
+                    <div class="page-title" id="mp-detail-name">Marketplace</div>
+                    <div class="page-subtitle" id="mp-detail-url">slug.marketplaces.com.ai</div>
+                </div>
+                <div class="tabs">
+                    <div class="tab active" onclick="showMpTab('plugins')">Plugins</div>
+                    <div class="tab" onclick="showMpTab('add')">Add Plugin</div>
+                    <div class="tab" onclick="showMpTab('settings')">Settings</div>
+                </div>
+                <div id="mp-tab-plugins">
+                    <div id="mp-plugins-list"></div>
+                </div>
+                <div id="mp-tab-add" class="hidden">
+                    <div class="card">
+                        <h3 style="font-size:1rem; margin-bottom:1rem;">Upload a Plugin</h3>
+                        <div class="input-group">
+                            <label>Plugin Manifest (JSON)</label>
+                            <textarea class="input" id="upload-manifest" rows="8" placeholder='{"name": "my-plugin", "namespace": "my-org", "version": "1.0.0", ...}'></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Plugin Archive (.zip)</label>
+                            <input type="file" id="upload-artifact" accept=".zip" style="color:var(--text-muted); font-size:0.85rem;">
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="publishPlugin()" style="margin-top:0.5rem">Publish</button>
+                    </div>
+                    <div class="divider">or add from official catalog</div>
+                    <div id="official-plugins-to-add"></div>
+                </div>
+                <div id="mp-tab-settings" class="hidden">
+                    <div class="card">
+                        <h3 style="font-size:1rem; margin-bottom:1rem;">Marketplace Settings</h3>
+                        <div class="input-group">
+                            <label>Name</label>
+                            <input class="input" id="mp-setting-name">
+                        </div>
+                        <div class="input-group">
+                            <label>Description</label>
+                            <textarea class="input" id="mp-setting-desc" rows="3"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Visibility</label>
+                            <select class="input" id="mp-setting-visibility">
+                                <option value="public">Public — anyone can browse</option>
+                                <option value="private">Private — requires access token</option>
+                                <option value="unlisted">Unlisted — accessible by URL only</option>
+                            </select>
+                        </div>
+                        <div class="input-group" id="access-token-group" style="display:none">
+                            <label>Access Token (share with your Luna agents)</label>
+                            <input class="input" id="mp-access-token" readonly style="font-family:monospace; font-size:0.8rem;">
+                        </div>
+                        <div class="input-group">
+                            <label>Signing Key (public)</label>
+                            <input class="input" id="mp-signing-key" readonly style="font-family:monospace; font-size:0.75rem;">
+                        </div>
+                        <div class="input-group">
+                            <label>Luna Agent Config</label>
+                            <pre class="input" id="mp-luna-config" style="white-space:pre; font-family:monospace; font-size:0.75rem; padding:1rem; line-height:1.6;"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OFFICIAL CATALOG (read-only browse) -->
+            <div id="page-official-catalog" class="hidden">
+                <div class="page-header">
+                    <div class="page-title">Official Catalog</div>
+                    <div class="page-subtitle">Browse trusted plugins from the official Luna marketplace — pick any to add to yours</div>
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <input class="input" id="catalog-search" placeholder="Search plugins..." oninput="filterCatalog()" style="max-width:400px;">
+                </div>
+                <div id="catalog-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem;"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- CREATE MARKETPLACE MODAL -->
+    <div id="modal-create-mp" class="modal-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+        <div class="modal">
+            <div class="modal-title">Create a New Marketplace</div>
+            <div class="input-group">
+                <label>Marketplace Name</label>
+                <input class="input" id="new-mp-name" placeholder="Acme Plugins">
+            </div>
+            <div class="input-group">
+                <label>Slug (URL: <span id="slug-preview">yourslug</span>.marketplaces.com.ai)</label>
+                <input class="input" id="new-mp-slug" placeholder="acme-plugins" oninput="document.getElementById('slug-preview').textContent=this.value||'yourslug'">
+            </div>
+            <div class="input-group">
+                <label>Description</label>
+                <textarea class="input" id="new-mp-desc" rows="2" placeholder="Plugins for our Luna agents"></textarea>
+            </div>
+            <div class="input-group">
+                <label>Visibility</label>
+                <select class="input" id="new-mp-visibility">
+                    <option value="private">Private — only agents with the token can access</option>
+                    <option value="public">Public — listed and browsable by anyone</option>
+                    <option value="unlisted">Unlisted — accessible by direct URL only</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-create-mp').classList.add('hidden')">Cancel</button>
+                <button class="btn btn-primary btn-sm" onclick="createMarketplace()">Create Marketplace</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    let token = localStorage.getItem('mp_token');
+    let currentUser = null;
+    let currentOrg = null;
+    let marketplaces = [];
+    let currentMp = null;
+    let officialPlugins = [];
+
+    // INIT
+    if (token) { initApp(); } 
+
+    // AUTH
+    function showLogin() { 
+        document.getElementById('login-screen').classList.remove('hidden'); 
+        document.getElementById('signup-screen').classList.add('hidden'); 
+    }
+    function showSignup() { 
+        document.getElementById('signup-screen').classList.remove('hidden'); 
+        document.getElementById('login-screen').classList.add('hidden'); 
+    }
+    function loginGoogle() {
+        // For now, simulate Google OAuth by creating/logging in a demo user
+        loginWithCredentials('demo@marketplaces.com.ai', 'demo123');
+    }
+    async function loginEmail() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        await loginWithCredentials(email, password);
+    }
+    async function loginWithCredentials(email, password) {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({email, password, username: email.split('@')[0]})
+        });
+        if (!res.ok) { alert('Login failed — check credentials'); return; }
+        const data = await res.json();
+        token = data.access_token;
+        localStorage.setItem('mp_token', token);
+        initApp();
+    }
+    async function signup() {
+        const username = document.getElementById('signup-username').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        const res = await fetch('/api/auth/signup', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({username, email, password})
+        });
+        if (!res.ok) { const e = await res.json(); alert(e.detail || 'Signup failed'); return; }
+        await loginWithCredentials(email, password);
+    }
+    function logout() { localStorage.removeItem('mp_token'); token = null; location.reload(); }
+
+    // APP INIT
+    async function initApp() {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('signup-screen').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+
+        // Get or create org
+        const orgs = await api('GET', '/api/orgs');
+        if (orgs.length === 0) {
+            // auto-create org for new user
+            currentOrg = await api('POST', '/api/orgs', {name: 'My Organization', slug: 'org-' + Date.now()});
+        } else {
+            currentOrg = orgs[0];
+        }
+        document.getElementById('user-display-name').textContent = currentOrg.name;
+        document.getElementById('user-display-email').textContent = currentOrg.slug + '.marketplaces.com.ai';
+
+        await loadMarketplaces();
+        await loadOfficialCatalog();
+        showPage('dashboard');
+    }
+
+    async function loadMarketplaces() {
+        marketplaces = await api('GET', `/api/orgs/${currentOrg.slug}/marketplaces`);
+        renderDashboard();
+        renderNav();
+    }
+
+    function renderNav() {
+        const nav = document.getElementById('marketplace-nav');
+        nav.innerHTML = marketplaces.map(mp => `
+            <div class="nav-item" data-page="marketplace-${mp.id}" onclick="openMarketplace('${mp.id}')">
+                <span class="nav-item-icon">${mp.visibility==='private'?'🔒':'🏪'}</span> ${mp.name}
+            </div>
+        `).join('');
+    }
+
+    function renderDashboard() {
+        document.getElementById('stat-marketplaces').textContent = marketplaces.length;
+        const totalPlugins = marketplaces.reduce((s,m) => s + (m.plugin_count||0), 0);
+        document.getElementById('stat-plugins').textContent = totalPlugins;
+
+        const list = document.getElementById('marketplace-list');
+        if (marketplaces.length === 0) {
+            list.innerHTML = `<div class="empty-card card"><h3>No marketplaces yet</h3><p>Create your first marketplace to start distributing plugins to your Luna agents</p></div>`;
+        } else {
+            list.innerHTML = marketplaces.map(mp => `
+                <div class="card" style="cursor:pointer" onclick="openMarketplace('${mp.id}')">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">${mp.name}</div>
+                            <div class="card-subtitle">${mp.slug}.marketplaces.com.ai</div>
+                        </div>
+                        <span class="card-badge badge-${mp.visibility}">${mp.visibility}</span>
+                    </div>
+                    <div style="display:flex; gap:1.5rem; font-size:0.8rem; color:var(--text-muted);">
+                        <span>📦 ${mp.plugin_count || 0} plugins</span>
+                        <span>🔑 ${mp.signing_key_public ? mp.signing_key_public.slice(0,12)+'...' : 'generating...'}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    // MARKETPLACE DETAIL
+    async function openMarketplace(id) {
+        currentMp = marketplaces.find(m => m.id === id);
+        if (!currentMp) return;
+        document.getElementById('mp-detail-name').textContent = currentMp.name;
+        document.getElementById('mp-detail-url').textContent = currentMp.slug + '.marketplaces.com.ai';
+        
+        // Load plugins for this marketplace
+        const plugins = await fetch(`/api/catalog/${currentMp.slug}`).then(r=>r.ok?r.json():[]);
+        renderMpPlugins(plugins);
+        
+        // Settings
+        document.getElementById('mp-setting-name').value = currentMp.name;
+        document.getElementById('mp-setting-desc').value = currentMp.description || '';
+        document.getElementById('mp-setting-visibility').value = currentMp.visibility;
+        document.getElementById('mp-signing-key').value = currentMp.signing_key_public || '';
+        if (currentMp.visibility === 'private' && currentMp.access_token) {
+            document.getElementById('access-token-group').style.display = 'block';
+            document.getElementById('mp-access-token').value = currentMp.access_token;
+        } else {
+            document.getElementById('access-token-group').style.display = 'none';
+        }
+        document.getElementById('mp-luna-config').textContent = `[[marketplaces]]\nid = "${currentMp.slug}"\nurl = "https://${currentMp.slug}.marketplaces.com.ai"\npinned_key = "ed25519:${currentMp.signing_key_public || '...'}"`;
+
+        // Load official catalog for "add from catalog"
+        renderAddFromCatalog();
+        
+        showPage('marketplace');
+        showMpTab('plugins');
+    }
+
+    function renderMpPlugins(plugins) {
+        const el = document.getElementById('mp-plugins-list');
+        if (plugins.length === 0) {
+            el.innerHTML = '<div class="empty-card card"><h3>No plugins yet</h3><p>Upload a plugin or add one from the official catalog</p></div>';
+            return;
+        }
+        el.innerHTML = '<div class="card" style="padding:0.5rem">' + plugins.map(p => `
+            <div class="plugin-row">
+                <div class="plugin-row-icon">${getIcon(p.name)}</div>
+                <div class="plugin-row-info">
+                    <div class="plugin-row-name">${p.name}</div>
+                    <div class="plugin-row-desc">${p.description}</div>
+                </div>
+                <div class="plugin-row-meta">
+                    <span class="plugin-row-version">v${p.latest_version}</span>
+                </div>
+            </div>
+        `).join('') + '</div>';
+    }
+
+    function renderAddFromCatalog() {
+        const el = document.getElementById('official-plugins-to-add');
+        el.innerHTML = '<div class="card" style="padding:0.5rem">' + officialPlugins.map(p => `
+            <div class="plugin-row">
+                <div class="plugin-row-icon">${getIcon(p.name)}</div>
+                <div class="plugin-row-info">
+                    <div class="plugin-row-name">${p.name}</div>
+                    <div class="plugin-row-desc">${p.description}</div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="addFromCatalog('${p.name}')">+ Add</button>
+            </div>
+        `).join('') + '</div>';
+    }
+
+    async function addFromCatalog(pluginName) {
+        const p = officialPlugins.find(x => x.name === pluginName);
+        if (!p) return;
+        // Re-publish the plugin to this marketplace (simplified — copies manifest)
+        const manifest = {name: p.name, namespace: currentMp.slug, version: p.latest_version, description: p.description, tags: p.tags, license: p.license, compat: {sdk: "^1.0", requires: {tools: ">=1"}}, permissions: {tools: p.tool_policies, egress_hosts: p.requires_egress, vault_access: p.requires_vault_access, ui_iframe: p.requires_ui_iframe, settings_tab: p.requires_settings_tab}};
+        const formData = new FormData();
+        formData.append('manifest', JSON.stringify(manifest));
+        formData.append('artifact', new Blob(['placeholder'], {type:'application/zip'}), 'artifact.zip');
+        const res = await fetch(`/api/marketplaces/${currentMp.slug}/publish`, {method:'POST', headers:{'Authorization':`Bearer ${token}`}, body: formData});
+        if (res.ok) { alert(`Added ${pluginName} to ${currentMp.name}!`); openMarketplace(currentMp.id); }
+        else { const e = await res.json(); alert(e.detail || 'Failed to add'); }
+    }
+
+    async function publishPlugin() {
+        const manifestText = document.getElementById('upload-manifest').value;
+        const fileInput = document.getElementById('upload-artifact');
+        if (!manifestText) { alert('Please paste the plugin manifest JSON'); return; }
+        
+        const formData = new FormData();
+        formData.append('manifest', manifestText);
+        if (fileInput.files[0]) {
+            formData.append('artifact', fileInput.files[0]);
+        } else {
+            formData.append('artifact', new Blob(['placeholder'], {type:'application/zip'}), 'artifact.zip');
+        }
+        const res = await fetch(`/api/marketplaces/${currentMp.slug}/publish`, {method:'POST', headers:{'Authorization':`Bearer ${token}`}, body: formData});
+        if (res.ok) { alert('Plugin published!'); openMarketplace(currentMp.id); showMpTab('plugins'); }
+        else { const e = await res.json(); alert(e.detail || 'Publish failed'); }
+    }
+
+    // TABS
+    function showMpTab(tab) {
+        ['plugins','add','settings'].forEach(t => {
+            document.getElementById(`mp-tab-${t}`).classList.toggle('hidden', t !== tab);
+        });
+        document.querySelectorAll('#page-marketplace .tab').forEach((el,i) => {
+            el.classList.toggle('active', ['plugins','add','settings'][i] === tab);
+        });
+    }
+
+    // CREATE MARKETPLACE
+    function showCreateMarketplace() { document.getElementById('modal-create-mp').classList.remove('hidden'); }
+    async function createMarketplace() {
+        const name = document.getElementById('new-mp-name').value;
+        const slug = document.getElementById('new-mp-slug').value;
+        const desc = document.getElementById('new-mp-desc').value;
+        const visibility = document.getElementById('new-mp-visibility').value;
+        if (!name || !slug) { alert('Name and slug are required'); return; }
+        const res = await api('POST', `/api/orgs/${currentOrg.slug}/marketplaces`, {name, slug, description: desc, visibility});
+        if (res.id) {
+            document.getElementById('modal-create-mp').classList.add('hidden');
+            await loadMarketplaces();
+            openMarketplace(res.id);
+        }
+    }
+
+    // OFFICIAL CATALOG
+    async function loadOfficialCatalog() {
+        officialPlugins = await fetch('/api/catalog/official').then(r=>r.ok?r.json():[]);
+    }
+    function showPage(page) {
+        ['dashboard','marketplace','official-catalog'].forEach(p => {
+            document.getElementById(`page-${p}`).classList.toggle('hidden', p !== page);
+        });
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        const active = document.querySelector(`[data-page="${page}"]`);
+        if (active) active.classList.add('active');
+
+        if (page === 'official-catalog') renderCatalog();
+    }
+    function renderCatalog() {
+        const grid = document.getElementById('catalog-grid');
+        grid.innerHTML = officialPlugins.map(p => `
+            <div class="card">
+                <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+                    <div class="plugin-row-icon" style="width:36px;height:36px;border-radius:8px;font-size:16px;">${getIcon(p.name)}</div>
+                    <div style="flex:1"><div style="font-weight:600;font-size:0.9rem">${p.name}</div><div style="font-size:0.7rem;color:var(--text-muted)">${p.namespace}/${p.name}</div></div>
+                    <span class="plugin-row-version">v${p.latest_version}</span>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.description}</div>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin-bottom:0.5rem">${(p.tags||[]).slice(0,4).map(t=>`<span class="plugin-row-tag">${t}</span>`).join('')}</div>
+            </div>
+        `).join('');
+    }
+    function filterCatalog() {
+        const q = document.getElementById('catalog-search').value.toLowerCase();
+        const filtered = officialPlugins.filter(p => p.name.includes(q) || p.description.toLowerCase().includes(q) || (p.tags||[]).some(t=>t.includes(q)));
+        const grid = document.getElementById('catalog-grid');
+        grid.innerHTML = filtered.map(p => `
+            <div class="card">
+                <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+                    <div class="plugin-row-icon" style="width:36px;height:36px;border-radius:8px;font-size:16px;">${getIcon(p.name)}</div>
+                    <div style="flex:1"><div style="font-weight:600;font-size:0.9rem">${p.name}</div><div style="font-size:0.7rem;color:var(--text-muted)">${p.namespace}/${p.name}</div></div>
+                    <span class="plugin-row-version">v${p.latest_version}</span>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">${p.description}</div>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">${(p.tags||[]).slice(0,4).map(t=>`<span class="plugin-row-tag">${t}</span>`).join('')}</div>
+            </div>
+        `).join('');
+    }
+
+    // HELPERS
+    async function api(method, url, body) {
+        const opts = {method, headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${token}`}};
+        if (body) opts.body = JSON.stringify(body);
+        const res = await fetch(url, opts);
+        if (res.status === 401) { logout(); return; }
+        return res.json();
+    }
+    const ICONS = ['🔧','📊','🔌','🧠','💬','📁','🔐','🎨','📈','⚡','🌐','📋','🛡️','🔔','📦'];
+    function getIcon(name) { let h=0; for(let i=0;i<name.length;i++) h=((h<<5)-h)+name.charCodeAt(i); return ICONS[Math.abs(h)%ICONS.length]; }
+    </script>
+</body>
+</html>

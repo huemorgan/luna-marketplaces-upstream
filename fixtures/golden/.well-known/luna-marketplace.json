@@ -1,0 +1,15 @@
+{
+  "id": "demo-marketplace-001",
+  "name": "Demo Marketplace",
+  "protocol_version": "0.1.0",
+  "description": "",
+  "signing_keys": [
+    "061b95df484f40888462d51f89c84a78c8fe3b631c19c7d7646ff5cc0a5962b2"
+  ],
+  "endpoints": {
+    "index": "/index.json",
+    "plugins": "/plugins/{name}/versions.json",
+    "artifact": "/plugins/{name}/{version}/artifact.zip"
+  },
+  "previous_keys": []
+}
