@@ -27,7 +27,11 @@ def get_database_url() -> str:
 
 DB_URL = get_database_url()
 
-engine = create_async_engine(DB_URL, echo=False)
+_engine_kwargs: dict = {"echo": False}
+if "render.com" in DB_URL or "asyncpg" in DB_URL and "localhost" not in DB_URL and "sqlite" not in DB_URL:
+    _engine_kwargs["connect_args"] = {"ssl": "require"}
+
+engine = create_async_engine(DB_URL, **_engine_kwargs)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
