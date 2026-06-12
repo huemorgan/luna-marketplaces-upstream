@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import ssl as ssl_module
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -14,13 +15,11 @@ def get_database_url() -> str:
     """Resolve database URL — PostgreSQL in prod, SQLite locally."""
     url = os.environ.get("DATABASE_URL", "")
     if url:
-        # Render provides postgres:// but SQLAlchemy needs postgresql+asyncpg://
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql+asyncpg://", 1)
         elif url.startswith("postgresql://"):
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
         return url
-    # Local development fallback: SQLite
     db_path = Path(__file__).parent.parent / "data" / "marketplace.db"
     return f"sqlite+aiosqlite:///{db_path}"
 
@@ -28,8 +27,11 @@ def get_database_url() -> str:
 DB_URL = get_database_url()
 
 _engine_kwargs: dict = {"echo": False}
-if "render.com" in DB_URL or "asyncpg" in DB_URL and "localhost" not in DB_URL and "sqlite" not in DB_URL:
-    _engine_kwargs["connect_args"] = {"ssl": "require"}
+if "asyncpg" in DB_URL and "localhost" not in DB_URL:
+    _ssl_ctx = ssl_module.create_default_context()
+    _ssl_ctx.check_hostname = False
+    _ssl_ctx.verify_mode = ssl_module.CERT_NONE
+    _engine_kwargs["connect_args"] = {"ssl": _ssl_ctx}
 
 engine = create_async_engine(DB_URL, **_engine_kwargs)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
