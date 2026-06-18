@@ -231,16 +231,13 @@
                 </div>
                 <div id="mp-tab-add" class="hidden">
                     <div class="card">
-                        <h3 style="font-size:1rem; margin-bottom:1rem;">Upload a Plugin</h3>
-                        <div class="input-group">
-                            <label>Plugin Manifest (JSON)</label>
-                            <textarea class="input" id="upload-manifest" rows="8" placeholder='{"name": "my-plugin", "namespace": "my-org", "version": "1.0.0", ...}'></textarea>
-                        </div>
+                        <h3 style="font-size:1rem; margin-bottom:0.5rem;">Upload a Plugin</h3>
+                        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem;">Upload your plugin's <code>.zip</code> — the manifest (<code>luna-plugin.toml</code>) is read from inside it. The zip must contain one top-level package dir with <code>__init__.py</code> and <code>luna-plugin.toml</code>.</p>
                         <div class="input-group">
                             <label>Plugin Archive (.zip)</label>
                             <input type="file" id="upload-artifact" accept=".zip" style="color:var(--text-muted); font-size:0.85rem;">
                         </div>
-                        <button class="btn btn-primary btn-sm" onclick="publishPlugin()" style="margin-top:0.5rem">Publish</button>
+                        <button class="btn btn-primary btn-sm" onclick="publishPlugin()" style="margin-top:0.5rem">Upload</button>
                     </div>
                     <div class="divider">or add from official catalog</div>
                     <div id="official-plugins-to-add"></div>
@@ -521,20 +518,14 @@
     }
 
     async function publishPlugin() {
-        const manifestText = document.getElementById('upload-manifest').value;
         const fileInput = document.getElementById('upload-artifact');
-        if (!manifestText) { alert('Please paste the plugin manifest JSON'); return; }
-        
+        if (!fileInput.files[0]) { alert('Please choose a plugin .zip to upload'); return; }
+
         const formData = new FormData();
-        formData.append('manifest', manifestText);
-        if (fileInput.files[0]) {
-            formData.append('artifact', fileInput.files[0]);
-        } else {
-            formData.append('artifact', new Blob(['placeholder'], {type:'application/zip'}), 'artifact.zip');
-        }
-        const res = await fetch(`/api/marketplaces/${currentMp.slug}/publish`, {method:'POST', headers:{'Authorization':`Bearer ${token}`}, body: formData});
-        if (res.ok) { alert('Plugin published!'); openMarketplace(currentMp.id); showMpTab('plugins'); }
-        else { const e = await res.json(); alert(e.detail || 'Publish failed'); }
+        formData.append('artifact', fileInput.files[0]);
+        const res = await fetch(`/api/marketplaces/${currentMp.slug}/upload`, {method:'POST', headers:{'Authorization':`Bearer ${token}`}, body: formData});
+        if (res.ok) { const r = await res.json(); alert(`Uploaded ${r.plugin} ${r.version}!`); openMarketplace(currentMp.id); showMpTab('plugins'); }
+        else { const e = await res.json().catch(()=>({detail:'Upload failed'})); alert(e.detail || 'Upload failed'); }
     }
 
     // TABS

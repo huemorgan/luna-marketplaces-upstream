@@ -1,0 +1,48 @@
+---
+description: Fixed local server addresses and UI build for Luna development
+globs:
+alwaysApply: true
+---
+
+# Local Server
+
+Luna runs as a **single server** on port 3000. It serves both the API and the built UI from `ui/dist/`.
+
+| Service | Port | URL | Start command |
+|---------|------|-----|---------------|
+| Luna (API + UI) | 3000 | http://localhost:3000 | `.venv/bin/luna serve --port 3000` |
+
+## UI Build — MANDATORY before every server start
+
+The server serves pre-built static files from `ui/dist/`. There is NO Vite dev server, NO hot-reload. Every time you change any UI file (`.tsx`, `.ts`, `.css`, anything under `ui/src/`), you MUST rebuild before the change is visible:
+
+```bash
+cd ui && npm run build
+```
+
+**If you skip this step, the user sees stale UI.** This is the #1 source of "nothing changed" complaints.
+
+## Restart procedure
+
+Always rebuild UI, kill the existing process, then start fresh:
+
+```bash
+# 1. Rebuild UI (ALWAYS do this)
+cd ui && npm run build
+
+# 2. Kill + restart server
+lsof -ti:3000 | xargs kill -9 2>/dev/null; sleep 1
+.venv/bin/luna serve --port 3000
+```
+
+Never use a different port. If the port is occupied, kill the occupant.
+
+## OAuth redirect URIs
+
+All OAuth plugins derive redirect URIs from the server's origin. With the single-server setup on port 3000, all callbacks are:
+
+- Google: `http://localhost:3000/api/p/plugin-google-auth/callback`
+- Slack: `http://localhost:3000/api/p/plugin-slack/callback`
+- Monday: `http://localhost:3000/api/p/plugin-monday/callback`
+
+These must be registered in each provider's OAuth app settings. Never change the port without updating the provider configs.

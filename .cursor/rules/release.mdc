@@ -1,0 +1,23 @@
+# Release Checklist — merging to main / version bumps
+
+Luna is consumed by luna-service as a submodule, and its CI builds the UI with **pnpm** (we develop locally with npm). Both lockfiles must stay in sync with `ui/package.json`.
+
+Before any commit to `main` or version bump:
+
+1. **Sync the pnpm lockfile.** If `ui/package.json` changed since the last release:
+
+```bash
+cd ui && pnpm install --lockfile-only
+```
+
+   Commit `ui/pnpm-lock.yaml` alongside `ui/package-lock.json`. A stale `pnpm-lock.yaml` breaks the luna-service build with "lockfile mismatch".
+
+2. **Bump the version** in `luna/__init__.py` per `plans/version-strategy.md` (MINOR for new capability, PATCH otherwise).
+
+3. **Push to both remotes** — `origin` (huemorgan/luna) and `render` (novalystrix/luna). The `render` push triggers the production auto-deploy of the `luna` service (`srv-d8cu5hpkh4rs738ao9g0`).
+
+4. **Verify production** after deploy goes live:
+
+```bash
+curl -s https://luna-kp8e.onrender.com/api/version
+```

@@ -302,7 +302,7 @@
     <script>
         let allPlugins = [];
         let activeFilter = 'all';
-        const mpSlug = window.location.pathname.split('/marketplace/')[1] || 'official';
+        const mpSlug = window.location.pathname.split('/browse/')[1]?.split('/')[0] || 'official';
 
         const ICONS = ['🔧','📊','🔌','🧠','💬','📁','🔐','🎨','📈','⚡','🌐','📋','🛡️','🔔','📦'];
 
@@ -350,7 +350,7 @@
             empty.style.display = 'none';
 
             grid.innerHTML = plugins.map(p => `
-                <div class="card" onclick="window.location='/marketplace/${mpSlug}/plugin/${p.name}'">
+                <div class="card" onclick="window.location='/browse/${mpSlug}/plugin/${p.name}'">
                     <div class="card-header">
                         <div class="card-icon">${p.icon_url || getPluginIcon(p.name)}</div>
                         <div class="card-title-area">
@@ -371,6 +371,7 @@
                             ${p.requires_vault_access ? '<span class="badge vault">🔐 Vault</span>' : ''}
                             ${(p.requires_egress || []).length > 0 ? `<span class="badge egress">🌐 Egress</span>` : ''}
                         </div>
+                        <span class="card-downloads">⬇ ${(p.download_count||0).toLocaleString()}</span>
                         <span class="card-license ${p.license.toLowerCase()}">${p.license}</span>
                     </div>
                 </div>

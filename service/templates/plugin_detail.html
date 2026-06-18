@@ -56,6 +56,10 @@
         .versions-table th { text-align: left; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
         .versions-table td { padding: 0.6rem 0; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
         .versions-table .ver { color: var(--accent); font-weight: 500; }
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+        .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; text-align: center; }
+        .stat-num { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
     </style>
 </head>
 <body>
@@ -71,12 +75,12 @@
     </main>
 
     <script>
-        const mpSlug = window.location.pathname.split('/marketplace/')[1]?.split('/plugin/')[0] || 'official';
+        const mpSlug = window.location.pathname.split('/browse/')[1]?.split('/plugin/')[0] || 'official';
         const pluginName = window.location.pathname.split('/plugin/')[1] || '';
         const ICONS = ['🔧','📊','🔌','🧠','💬','📁','🔐','🎨','📈','⚡','🌐','📋','🛡️','🔔','📦'];
         function getIcon(name) { let h=0; for(let i=0;i<name.length;i++) h=((h<<5)-h)+name.charCodeAt(i); return ICONS[Math.abs(h)%ICONS.length]; }
 
-        document.getElementById('back-link').href = `/marketplace/${mpSlug}`;
+        document.getElementById('back-link').href = `/browse/${mpSlug}`;
 
         async function load() {
             const [pluginRes, versionsRes] = await Promise.all([
@@ -87,20 +91,29 @@
             const p = await pluginRes.json();
             const versions = versionsRes.ok ? await versionsRes.json() : [];
 
+            const mpUrl = `${window.location.origin}/mp/${mpSlug}/`;
             document.title = `${p.name} — Luna Marketplace`;
             document.getElementById('content').innerHTML = `
                 <div class="plugin-header">
                     <div class="plugin-icon">${p.icon_url || getIcon(p.name)}</div>
-                    <div>
+                    <div style="flex:1">
                         <div class="plugin-title">${p.name}</div>
-                        <div class="plugin-namespace">${p.namespace}/${p.name}</div>
+                        <div class="plugin-namespace">${p.namespace}/${p.name} · published by <strong>${p.marketplace_name || mpSlug}</strong></div>
                         ${p.latest_version ? `<span class="plugin-version">v${p.latest_version}</span>` : ''}
                     </div>
                 </div>
 
-                <div class="install-cmd">
-                    <span>/marketplace install ${p.namespace}/${p.name}</span>
-                    <span style="color:var(--text-muted);font-size:0.75rem">Luna command</span>
+                <div class="stats-row">
+                    <div class="stat"><div class="stat-num">${(p.download_count||0).toLocaleString()}</div><div class="stat-label">⬇ Downloads</div></div>
+                    <div class="stat"><div class="stat-num">${versions.length}</div><div class="stat-label">📦 Versions</div></div>
+                    <div class="stat"><div class="stat-num">${p.tool_count}</div><div class="stat-label">⚡ Tools</div></div>
+                    <div class="stat"><div class="stat-num">${p.license}</div><div class="stat-label">📄 License</div></div>
+                </div>
+
+                <div class="section" style="border-color:var(--accent)">
+                    <div class="section-title">🌙 Add to Luna</div>
+                    <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.75rem">Paste this marketplace URL in Luna → Settings → Marketplaces, then install <strong>${p.name}</strong> from the catalog.</div>
+                    <div class="install-cmd"><span id="mp-url">${mpUrl}</span><button onclick="navigator.clipboard.writeText('${mpUrl}');this.textContent='Copied'" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:0.35rem 0.8rem;cursor:pointer;font-size:0.75rem">Copy</button></div>
                 </div>
 
                 <div class="plugin-description">${p.description}</div>

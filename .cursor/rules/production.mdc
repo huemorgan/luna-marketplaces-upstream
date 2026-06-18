@@ -1,0 +1,33 @@
+---
+description: Production infrastructure access
+globs: []
+alwaysApply: true
+---
+
+# Production Infrastructure
+
+## Render.com
+- Service: FunnelFighters (`srv-d7fopj4vikkc739t3vgg`)
+- Database: marketracking-db (`dpg-d7fm61flk1mc73dhcas0-a`)
+- Region: Oregon
+
+## Production Database
+```
+postgresql://marketracking_user:c9mAvNNNK0fAkfmUN4Pad4dUj4hYNpyR@dpg-d7fm61flk1mc73dhcas0-a/marketracking
+```
+
+External (from outside Render network — add `-a` suffix to host):
+```
+postgresql://marketracking_user:c9mAvNNNK0fAkfmUN4Pad4dUj4hYNpyR@dpg-d7fm61flk1mc73dhcas0-a.oregon-postgres.render.com/marketracking
+```
+
+## Quick query from local machine
+```bash
+psql "postgresql://marketracking_user:c9mAvNNNK0fAkfmUN4Pad4dUj4hYNpyR@dpg-d7fm61flk1mc73dhcas0-a.oregon-postgres.render.com/marketracking?sslmode=require"
+```
+
+## One-off job (runs inside Render, has internal DB access)
+```bash
+render jobs create srv-d7fopj4vikkc739t3vgg --start-command "node -e \"...\"" --confirm --output json
+render logs --resources <job-id> --output text
+```

@@ -127,6 +127,16 @@ class PluginVersion(Base):
     plugin = relationship("Plugin", back_populates="versions")
 
 
+class Artifact(Base):
+    """Metadata for a stored artifact. Bytes live on the mounted disk,
+    content-addressed by sha256 (see app/storage.py)."""
+    __tablename__ = "artifacts"
+
+    sha256 = Column(String, primary_key=True)
+    size = Column(Integer, nullable=False, default=0)
+    created_at = Column(Integer, default=now_ts)
+
+
 class UsageEvent(Base):
     """Metering from day one — captured always, billed later."""
     __tablename__ = "usage_events"

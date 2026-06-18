@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -13,14 +14,23 @@ from fastapi.templating import Jinja2Templates
 from .database import init_db
 from .routers.core import router as core_router
 from .routers.plugins import router as plugins_router
+from .routers.registry import router as registry_router
+from .seed_core import seed_core_plugins
 
 STATIC_DIR = Path(__file__).parent.parent / "static"
 TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
+
+logger = logging.getLogger("luna.marketplaces")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    try:
+        for line in await seed_core_plugins():
+            logger.info("seed: %s", line)
+    except Exception:  # noqa: BLE001 — never block boot on seeding
+        logger.exception("core plugin seeding failed")
     yield
 
 
@@ -33,6 +43,7 @@ app = FastAPI(
 
 app.include_router(core_router, prefix="/api")
 app.include_router(plugins_router, prefix="/api")
+app.include_router(registry_router)
 
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

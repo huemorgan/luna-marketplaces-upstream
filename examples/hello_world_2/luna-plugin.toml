@@ -1,0 +1,27 @@
+name = "hello-world-2"
+version = "0.1.0"
+description = "A second marketplace plugin, uploaded through the service."
+entry = "hello_world_2"
+sdk_version = "0"
+license = "MIT"
+tags = ["demo", "uploaded"]
+readme = """
+# hello-world-2
+
+The first plugin published to the marketplace **through the service upload
+flow** rather than the repo. A developer wrote it, zipped the package, and
+uploaded it — no redeploy needed.
+
+## Tool
+
+- `hello_world_2(name="world")` -> `{"greeting": "Hello again, <name>! ..."}`
+"""
+
+[requires]
+tools = 1
+
+[[tools]]
+name = "hello_world_2"
+description = "Return a second friendly greeting."
+policy = "auto_approve"
+risk_level = "low"

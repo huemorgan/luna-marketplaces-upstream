@@ -1,0 +1,40 @@
+# Version Bump — Every Commit
+
+## Where the version lives
+
+`luna/__init__.py` → `__version__` variable. Format: `"MAJOR.MINOR.PATCH"` with zero-padded segments (e.g. `"0.01.003"`).
+
+## Rule
+
+**Every commit that changes agent code MUST increment the PATCH digit** in `luna/__init__.py` before committing.
+
+- Current version example: `"0.01.002"` → next commit becomes `"0.01.003"`
+- Pad PATCH to three digits: `001`, `002`, … `099`, `100`, …
+- MINOR bumps reset PATCH to `001` (e.g. `"0.01.047"` → `"0.02.001"`)
+- MAJOR bumps reset both (e.g. `"0.99.123"` → `"1.00.001"`)
+
+## When to bump MINOR or MAJOR
+
+See `plans/version-strategy.md` for full rules. Summary:
+
+| Digit | Trigger |
+|-------|---------|
+| PATCH | Every commit (auto-increment) |
+| MINOR | New plugin, capability, gate, system app, or substantive fix |
+| MAJOR | Conceptual shift — agent can do a class of thing it couldn't before |
+
+## Exceptions (no bump)
+
+- Documentation-only changes (READMEs, plan files, comments)
+- Test-only changes that don't alter agent behavior
+- `.gitignore`, CI config, dev tooling with zero runtime impact
+
+## Enforcement
+
+When creating a git commit:
+1. Read current `__version__` from `luna/__init__.py`
+2. Increment PATCH by 1
+3. Write new version
+4. Include `luna/__init__.py` in the commit
+
+Never skip this. Never forget.

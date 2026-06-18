@@ -5,20 +5,51 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .. import storage
 from ..auth import get_current_user
 from ..database import get_db
-from ..models.db import Marketplace, Org, OrgMember, Plugin, PluginVersion, User, UsageEvent, now_ts
+from ..models.db import Artifact, Marketplace, Org, OrgMember, Plugin, PluginVersion, User, UsageEvent, now_ts
+from ..packaging import read_manifest_from_zip
 from ..models.schemas import PluginResponse, PluginVersionResponse
 
 router = APIRouter()
 
-ARTIFACTS_DIR = Path(__file__).parent.parent.parent / "data" / "artifacts"
+
+@router.post("/marketplaces/{mp_slug}/upload")
+async def upload_plugin(
+    mp_slug: str,
+    artifact: UploadFile = File(...),
+    readme: str | None = Form(None),
+    tags: str | None = Form(None),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Publish a plugin by uploading just its artifact zip.
+
+    The manifest (`luna-plugin.toml`) is read from INSIDE the zip — single
+    source of truth, matching how a developer authors the plugin. Optional
+    `readme`/`tags` form fields override the manifest values.
+    """
+    mp = await _get_marketplace_for_publisher(mp_slug, user, db)
+
+    artifact_bytes = await artifact.read()
+    artifact_hash = hashlib.sha256(artifact_bytes).hexdigest()
+    try:
+        manifest_data, _top = read_manifest_from_zip(artifact_bytes)
+    except ValueError as e:
+        raise HTTPException(400, f"invalid plugin artifact: {e}")
+
+    if readme is not None:
+        manifest_data["readme"] = readme
+    if tags is not None:
+        manifest_data["tags"] = [t.strip() for t in tags.split(",") if t.strip()]
+
+    return await _ingest_version(db, mp, manifest_data, artifact_bytes, artifact_hash)
 
 
 @router.post("/marketplaces/{mp_slug}/publish")
@@ -29,29 +60,37 @@ async def publish_plugin(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Publish a plugin version to a marketplace."""
+    """Publish a plugin version with an explicit manifest JSON (legacy/API path)."""
     mp = await _get_marketplace_for_publisher(mp_slug, user, db)
     manifest_data = json.loads(manifest)
+    artifact_bytes = await artifact.read()
+    artifact_hash = hashlib.sha256(artifact_bytes).hexdigest()
+    return await _ingest_version(db, mp, manifest_data, artifact_bytes, artifact_hash)
 
+
+async def _ingest_version(
+    db: AsyncSession,
+    mp: Marketplace,
+    manifest_data: dict,
+    artifact_bytes: bytes,
+    artifact_hash: str,
+):
+    """Shared publish path: validate, persist artifact to disk, upsert rows."""
     name = manifest_data.get("name")
     namespace = manifest_data.get("namespace", mp.slug)
     version = manifest_data.get("version")
     if not name or not version:
         raise HTTPException(400, "Manifest must include name and version")
+    version = str(version)
 
-    # Read artifact and hash it
-    artifact_bytes = await artifact.read()
-    artifact_hash = hashlib.sha256(artifact_bytes).hexdigest()
-    manifest_hash = hashlib.sha256(json.dumps(manifest_data).encode()).hexdigest()
+    manifest_hash = hashlib.sha256(json.dumps(manifest_data, sort_keys=True).encode()).hexdigest()
 
-    # Check immutability
     result = await db.execute(
         select(Plugin).where(Plugin.marketplace_id == mp.id, Plugin.name == name)
     )
     plugin = result.scalar_one_or_none()
 
     if plugin:
-        # Check for duplicate version
         ver_result = await db.execute(
             select(PluginVersion).where(
                 PluginVersion.plugin_id == plugin.id,
@@ -65,10 +104,13 @@ async def publish_plugin(
                     409, f"Version {version} already exists with different content (immutability rule)"
                 )
             raise HTTPException(409, f"Version {version} already published")
-    else:
-        # Create plugin entry
-        permissions = manifest_data.get("permissions", {})
-        tools = permissions.get("tools", [])
+
+    # Tools/permissions come either from a flat `tools` list (toml manifest) or
+    # a `permissions.tools` block (richer JSON manifest).
+    permissions = manifest_data.get("permissions", {})
+    tools = manifest_data.get("tools") or permissions.get("tools", []) or []
+
+    if plugin is None:
         plugin = Plugin(
             id=str(uuid.uuid4()),
             marketplace_id=mp.id,
@@ -79,7 +121,7 @@ async def publish_plugin(
             tags=manifest_data.get("tags", []),
             license=manifest_data.get("license", "MIT"),
             icon_url=manifest_data.get("icon"),
-            source_url=manifest_data.get("provenance", {}).get("source"),
+            source_url=manifest_data.get("provenance", {}).get("source") if isinstance(manifest_data.get("provenance"), dict) else None,
             requires_tools=len(tools) > 0,
             requires_ui_iframe=permissions.get("ui_iframe", False),
             requires_settings_tab=permissions.get("settings_tab", False),
@@ -90,15 +132,18 @@ async def publish_plugin(
         )
         db.add(plugin)
 
-    # Update plugin metadata
     plugin.latest_version = version
     plugin.description = manifest_data.get("description", plugin.description)
     plugin.readme = manifest_data.get("readme", plugin.readme)
     plugin.tags = manifest_data.get("tags", plugin.tags)
+    plugin.tool_count = len(tools)
+    plugin.tool_policies = tools
+    plugin.requires_tools = len(tools) > 0
     plugin.updated_at = now_ts()
 
-    # Create version entry
     compat = manifest_data.get("compat", {})
+    requires = compat.get("requires") or manifest_data.get("requires", {})
+    sdk_compat = compat.get("sdk") or str(manifest_data.get("sdk_version", "0"))
     pv = PluginVersion(
         id=str(uuid.uuid4()),
         plugin_id=plugin.id,
@@ -106,25 +151,23 @@ async def publish_plugin(
         artifact_hash=artifact_hash,
         manifest_hash=manifest_hash,
         manifest_data=manifest_data,
-        sdk_compat=compat.get("sdk", "^1.0"),
-        capabilities_required=compat.get("requires", {}),
+        sdk_compat=sdk_compat,
+        capabilities_required=requires,
     )
     db.add(pv)
 
-    # Store artifact
-    artifact_dir = ARTIFACTS_DIR / mp.slug / name / version
-    artifact_dir.mkdir(parents=True, exist_ok=True)
-    (artifact_dir / "artifact.zip").write_bytes(artifact_bytes)
-    (artifact_dir / "manifest.json").write_text(json.dumps(manifest_data, indent=2))
+    # Persist artifact bytes to the durable disk (content-addressed).
+    storage.store(artifact_hash, artifact_bytes)
+    if await db.get(Artifact, artifact_hash) is None:
+        db.add(Artifact(sha256=artifact_hash, size=len(artifact_bytes), created_at=now_ts()))
 
-    # Record usage event
     db.add(UsageEvent(
         id=str(uuid.uuid4()),
         org_id=mp.org_id,
         marketplace_id=mp.id,
         event_type="publish",
         plugin_name=f"{namespace}/{name}",
-        metadata={"version": version},
+        metadata_={"version": version},
     ))
 
     await db.commit()

@@ -1,0 +1,13 @@
+---
+description: "Use 28-day periods instead of 30-day — ensures exactly 4 full weeks with equal day distribution"
+alwaysApply: true
+---
+
+When showing a "monthly" or "~30 day" time period, always use **28 days** instead of 30.
+
+Why: 28 days = exactly 4 complete weeks. Every day of the week appears exactly 4 times. This avoids bias from having different numbers of weekdays vs weekends in the window, which skews traffic and conversion metrics.
+
+- UI labels: "28 days" (not "30 days" or "1 month")
+- Filter keys: `28d` (not `30d`)
+- Calculations: `Date.now() - 28 * 86400000`
+- SQL: `interval '28 days'`

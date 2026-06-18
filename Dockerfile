@@ -11,8 +11,13 @@ RUN uv pip install --system --no-cache -e "." && \
 COPY service/app ./app
 COPY service/templates ./templates
 COPY service/seed.py ./seed.py
+COPY marketplace-src ./marketplace-src
 
 RUN mkdir -p ./static
+
+# Core-plugin source + durable artifact storage (Render persistent disk at /data).
+ENV MARKETPLACE_SRC=/app/marketplace-src
+ENV ARTIFACTS_DIR=/data/artifacts
 
 EXPOSE 10000
 

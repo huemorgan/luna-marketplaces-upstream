@@ -5,6 +5,10 @@ services:
     dockerfilePath: ./Dockerfile
     plan: starter
     region: oregon
+    disk:
+      name: luna-mp-artifacts
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -14,6 +18,10 @@ services:
         generateValue: true
       - key: PYTHON_ENV
         value: production
+      - key: ARTIFACTS_DIR
+        value: /data/artifacts
+      - key: MARKETPLACE_SRC
+        value: /app/marketplace-src
 
 databases:
   - name: luna-mp-db
