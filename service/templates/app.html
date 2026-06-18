@@ -477,13 +477,14 @@
             return;
         }
         el.innerHTML = '<div class="card" style="padding:0.5rem">' + plugins.map(p => `
-            <div class="plugin-row">
+            <div class="plugin-row" style="cursor:pointer" onclick="window.open('/browse/${currentMp.slug}/plugin/${p.name}','_blank')">
                 <div class="plugin-row-icon">${getIcon(p.name)}</div>
                 <div class="plugin-row-info">
                     <div class="plugin-row-name">${p.name}</div>
                     <div class="plugin-row-desc">${p.description}</div>
                 </div>
                 <div class="plugin-row-meta">
+                    <span class="plugin-row-tag">⬇ ${(p.download_count||0).toLocaleString()}</span>
                     <span class="plugin-row-version">v${p.latest_version}</span>
                 </div>
             </div>
