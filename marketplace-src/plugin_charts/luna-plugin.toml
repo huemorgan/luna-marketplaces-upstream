@@ -1,0 +1,26 @@
+name = "plugin-charts"
+version = "0.1.0"
+description = "Interactive Chart.js charts rendered inline in the chat."
+entry = "plugin_charts"
+sdk_version = "0"
+license = "MIT"
+tags = ["visualization", "charts"]
+readme = """
+# plugin-charts
+
+Render interactive Chart.js charts (line, bar, pie, doughnut, radar, scatter)
+inline in the chat. Dark theme, responsive, animated, with hover tooltips.
+
+Built against `luna_sdk` v0 — no `import luna.*`.
+
+Source: https://github.com/huemorgan/plugin-charts
+"""
+
+[requires]
+tools = 1
+
+[[tools]]
+name = "render_chart"
+description = "Render an interactive chart inline in the chat."
+policy = "auto_approve"
+risk_level = "low"
