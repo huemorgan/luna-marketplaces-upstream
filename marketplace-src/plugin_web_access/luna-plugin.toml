@@ -1,0 +1,43 @@
+name = "plugin-web-access"
+version = "0.2.0"
+description = "Web search (Tavily/Google), page fetch, and HTTP client — live internet access."
+entry = "plugin_web_access"
+sdk_version = "0"
+license = "MIT"
+tags = ["web", "search", "http", "internet"]
+readme = """
+# plugin-web-access
+
+Gives the Luna agent eyes on the internet:
+
+- `web_search` — live web search via Tavily (default) or Google Custom Search.
+- `web_fetch` — fetch a URL and return its readable text (chrome stripped).
+- `http_request` — generic HTTP client for calling REST APIs.
+
+API keys resolve **vault-first** (`ctx.vault`) with env-var fallback
+(`LUNA_TAVILY_API_KEY`, `LUNA_GOOGLE_SEARCH_API_KEY`, `LUNA_GOOGLE_SEARCH_CX`,
+`LUNA_WEB_SEARCH_PROVIDER`). Built against `luna_sdk` v0 — no `import luna.*`.
+
+Source: https://github.com/huemorgan/plugin-web-access
+"""
+
+[requires]
+tools = 3
+
+[[tools]]
+name = "web_search"
+description = "Search the live web and return a concise answer plus source results."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "web_fetch"
+description = "Fetch a web page by URL and return its readable text content."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "http_request"
+description = "Make an arbitrary HTTP request to an API (GET/POST/PUT/PATCH/DELETE)."
+policy = "auto_approve"
+risk_level = "low"
