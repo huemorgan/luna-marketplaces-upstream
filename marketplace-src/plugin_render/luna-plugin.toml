@@ -1,0 +1,93 @@
+name = "plugin-render"
+version = "0.1.0"
+description = "Render.com service management — deploys, env vars, logs, and lifecycle control."
+entry = "plugin_render"
+sdk_version = "0"
+license = "MIT"
+tags = ["connector", "render", "devops"]
+readme = """
+# plugin-render
+
+Connect Luna to Render.com — manage services, trigger and inspect deploys,
+read/set/delete environment variables, and read live logs. The settings UI is
+served as a themed iframe from the plugin's managed directory (008.5/phase05),
+so the connector ships its own UI without compiling into core's bundle.
+
+Source: https://github.com/huemorgan/plugin-render
+"""
+
+[requires]
+tools = 12
+depends_on = ["plugin-vault"]
+
+[[tools]]
+name = "render_list_services"
+description = "List all Render services."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "render_get_service"
+description = "Get details of a specific Render service."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "render_restart_service"
+description = "Restart a Render service."
+policy = "ask"
+risk_level = "medium"
+
+[[tools]]
+name = "render_suspend_service"
+description = "Suspend a Render service (stops it)."
+policy = "ask"
+risk_level = "high"
+
+[[tools]]
+name = "render_resume_service"
+description = "Resume a suspended Render service."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "render_get_live_logs"
+description = "Get recent logs from a Render service."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "render_trigger_deploy"
+description = "Trigger a new deploy for a Render service."
+policy = "ask"
+risk_level = "medium"
+
+[[tools]]
+name = "render_list_deploys"
+description = "List recent deploys for a Render service."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "render_get_deploy"
+description = "Get details of a specific deploy."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "render_list_env_vars"
+description = "List environment variables for a Render service."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "render_set_env_var"
+description = "Set an environment variable on a Render service."
+policy = "ask"
+risk_level = "high"
+
+[[tools]]
+name = "render_delete_env_var"
+description = "Delete an environment variable from a Render service."
+policy = "ask"
+risk_level = "high"
