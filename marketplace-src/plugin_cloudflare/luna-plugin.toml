@@ -1,0 +1,112 @@
+name = "plugin-cloudflare"
+version = "0.1.0"
+description = "Cloudflare infrastructure management — DNS, cache, Workers, KV, Pages."
+entry = "plugin_cloudflare"
+sdk_version = "0"
+license = "MIT"
+tags = ["connector", "cloudflare", "dns", "devops"]
+auto_load = false
+readme = """
+# plugin-cloudflare
+
+Manage Cloudflare from Luna — DNS zones and records, CDN cache purge, Workers,
+Workers KV, and Pages. Requires a Cloudflare API token + account ID, pasted in
+the connector's settings (served as a themed iframe from the managed dir).
+Ships OFF by default.
+
+Source: https://github.com/huemorgan/plugin-cloudflare
+"""
+
+[requires]
+tools = 15
+depends_on = ["plugin-vault"]
+
+[[tools]]
+name = "cf_list_zones"
+description = "List all Cloudflare zones (domains) on the account."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "cf_list_dns_records"
+description = "List DNS records for a zone."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "cf_create_dns_record"
+description = "Create a new DNS record in a zone."
+policy = "ask"
+risk_level = "medium"
+
+[[tools]]
+name = "cf_update_dns_record"
+description = "Update an existing DNS record."
+policy = "ask"
+risk_level = "medium"
+
+[[tools]]
+name = "cf_delete_dns_record"
+description = "Delete a DNS record from a zone."
+policy = "ask"
+risk_level = "high"
+
+[[tools]]
+name = "cf_purge_cache"
+description = "Purge the Cloudflare cache for a zone."
+policy = "ask"
+risk_level = "medium"
+
+[[tools]]
+name = "cf_list_workers"
+description = "List all Workers scripts on the account."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "cf_get_worker"
+description = "Get a Worker script's source code."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "cf_deploy_worker"
+description = "Deploy (create or update) a Worker script."
+policy = "ask"
+risk_level = "high"
+
+[[tools]]
+name = "cf_list_kv_namespaces"
+description = "List all KV namespaces on the account."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "cf_kv_get"
+description = "Get a value from a KV namespace."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "cf_kv_put"
+description = "Write a value to a KV namespace."
+policy = "ask"
+risk_level = "medium"
+
+[[tools]]
+name = "cf_kv_delete"
+description = "Delete a key from a KV namespace."
+policy = "ask"
+risk_level = "high"
+
+[[tools]]
+name = "cf_list_pages_projects"
+description = "List all Cloudflare Pages projects on the account."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "cf_get_pages_project"
+description = "Get details of a Cloudflare Pages project."
+policy = "auto_approve"
+risk_level = "low"
