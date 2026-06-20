@@ -1,0 +1,119 @@
+name = "plugin-funnelfighters"
+version = "0.2.0"
+description = "Marketing intelligence via FunnelFighters + 4 Ducks methodology"
+entry = "plugin_funnelfighters"
+sdk_version = "0"
+license = "MIT"
+category = "connectors"
+default_enabled = false
+tags = ["marketing", "analytics", "connector"]
+readme = """
+# plugin-funnelfighters
+
+Marketing intelligence for Luna, powered by the FunnelFighters API and the
+**4 Ducks** funnel-analysis methodology. Ships **installed but OFF** — enable it
+in Settings → Plugins, then paste your API key + organization ID in the
+FunnelFighters tab (served as a themed iframe from the managed dir).
+
+15 read-only tools (campaigns, ads, funnels, cohorts, ROI, wasted spend, …) and
+the `four-ducks` skill the agent loads on demand. Built on `luna_sdk` v0:
+credentials via `ctx.vault`, authed routes via `luna_sdk.get_current_user`, live
+client held in a module singleton — no `import luna.*`.
+
+Source: https://github.com/huemorgan/plugin-funnelfighters
+"""
+
+[requires]
+tools = 15
+skills = 1
+depends_on = ["plugin-vault"]
+
+[[tools]]
+name = "ff_home_summary"
+description = "FunnelFighters home dashboard summary."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_portfolio_summary"
+description = "Portfolio-level performance summary."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_roi_summary"
+description = "Return-on-investment summary."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_campaigns"
+description = "List marketing campaigns."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_campaign_detail"
+description = "Detail for a single campaign."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_ads"
+description = "List ads."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_ad_detail"
+description = "Detail for a single ad."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_keywords"
+description = "List keywords and their performance."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_landing_pages"
+description = "List landing pages and their performance."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_funnel"
+description = "Funnel conversion breakdown."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_visitors"
+description = "Visitor metrics."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_cohorts"
+description = "Cohort analysis."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_wasted_spend"
+description = "Wasted-spend analysis."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_duck_analyze"
+description = "Run the 4 Ducks analysis."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "ff_duck_reports"
+description = "List saved 4 Ducks reports."
+policy = "auto_approve"
+risk_level = "low"
