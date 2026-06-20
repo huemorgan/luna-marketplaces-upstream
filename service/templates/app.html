@@ -105,6 +105,25 @@
         .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
         
         .hidden { display: none !important; }
+
+        /* Plugin detail slide-over drawer */
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1100; backdrop-filter: blur(2px); }
+        .drawer { position: fixed; top: 0; right: 0; height: 100%; width: 560px; max-width: 92vw; background: var(--surface); border-left: 1px solid var(--border); z-index: 1101; box-shadow: -8px 0 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.22s ease; }
+        .drawer.open { transform: translateX(0); }
+        .drawer-head { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 0.9rem; }
+        .drawer-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; }
+        .drawer-close { margin-left: auto; cursor: pointer; color: var(--text-muted); font-size: 1.4rem; line-height: 1; background: none; border: none; }
+        .drawer-section { margin-bottom: 1.5rem; }
+        .drawer-section h4 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.6rem; }
+        .meta-grid { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 1rem; font-size: 0.82rem; }
+        .meta-grid dt { color: var(--text-muted); }
+        .ver-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+        .ver-row:last-child { border-bottom: none; }
+        .ver-yanked { opacity: 0.5; }
+        .pill { font-size: 0.65rem; padding: 0.1rem 0.45rem; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--text-muted); }
+        .pill-danger { background: rgba(239,68,68,0.15); color: #f87171; }
+        .btn-danger { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+        .btn-danger:hover { background: rgba(239,68,68,0.25); }
     </style>
 </head>
 <body>
@@ -172,11 +191,15 @@
                 </div>
             </nav>
             <nav class="nav-section">
-                <div class="nav-label">My Marketplaces</div>
-                <div id="marketplace-nav"></div>
-                <div class="nav-item" onclick="showCreateMarketplace()" style="margin-top:0.5rem;">
+                <div class="nav-label">Created by you</div>
+                <div id="marketplace-nav-created"></div>
+                <div class="nav-item" onclick="showCreateMarketplace()" style="margin-top:0.25rem;">
                     <span class="nav-item-icon">➕</span> New Marketplace
                 </div>
+            </nav>
+            <nav class="nav-section" id="nav-section-shared" style="display:none;">
+                <div class="nav-label">Shared with you</div>
+                <div id="marketplace-nav-shared"></div>
             </nav>
             <nav class="nav-section">
                 <div class="nav-label">Browse</div>
@@ -216,10 +239,16 @@
                     <div class="stat-card"><div class="stat-value" id="stat-plugins">0</div><div class="stat-label">Plugins Published</div></div>
                 </div>
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
-                    <h3 style="font-size:1rem; font-weight:600;">Your Marketplaces</h3>
+                    <h3 style="font-size:1rem; font-weight:600;">Created by you</h3>
                     <button class="btn btn-primary btn-sm" onclick="showCreateMarketplace()">+ Create Marketplace</button>
                 </div>
-                <div id="marketplace-list"></div>
+                <div id="marketplace-list-created"></div>
+                <div id="shared-section" style="display:none; margin-top:2rem;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+                        <h3 style="font-size:1rem; font-weight:600;">Shared with you</h3>
+                    </div>
+                    <div id="marketplace-list-shared"></div>
+                </div>
             </div>
 
             <!-- MARKETPLACE DETAIL -->
@@ -229,10 +258,11 @@
                     <div class="page-subtitle" id="mp-detail-url">slug.marketplaces.com.ai</div>
                 </div>
                 <div class="tabs">
-                    <div class="tab active" onclick="showMpTab('plugins')">Plugins</div>
-                    <div class="tab" onclick="showMpTab('add')">Add Plugin</div>
-                    <div class="tab" onclick="showMpTab('settings')">Settings</div>
+                    <div class="tab active" id="tab-plugins" onclick="showMpTab('plugins')">Plugins</div>
+                    <div class="tab" id="tab-add" onclick="showMpTab('add')">Add Plugin</div>
+                    <div class="tab" id="tab-settings" onclick="showMpTab('settings')">Settings</div>
                 </div>
+                <div id="mp-readonly-note" style="display:none; font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">👁️ You have view-only access to this marketplace.</div>
                 <div id="mp-tab-plugins">
                     <div id="mp-plugins-list"></div>
                 </div>
@@ -329,6 +359,20 @@
         </div>
     </div>
 
+    <!-- PLUGIN DETAIL DRAWER -->
+    <div id="drawer-overlay" class="drawer-overlay hidden" onclick="closePluginDrawer()"></div>
+    <div id="plugin-drawer" class="drawer">
+        <div class="drawer-head">
+            <div class="plugin-row-icon" id="drawer-icon" style="width:44px;height:44px;font-size:20px;">🔌</div>
+            <div>
+                <div id="drawer-title" style="font-weight:600;font-size:1.05rem;"></div>
+                <div id="drawer-sub" style="font-size:0.75rem;color:var(--text-muted);"></div>
+            </div>
+            <button class="drawer-close" onclick="closePluginDrawer()">&times;</button>
+        </div>
+        <div class="drawer-body" id="drawer-body"></div>
+    </div>
+
     <script>
     let token = localStorage.getItem('mp_token');
     let currentUser = null;
@@ -405,35 +449,31 @@
     }
 
     async function loadMarketplaces() {
-        marketplaces = await api('GET', `/api/orgs/${currentOrg.slug}/marketplaces`);
+        marketplaces = (await api('GET', '/api/me/marketplaces')) || [];
         renderDashboard();
         renderNav();
     }
 
-    function renderNav() {
-        const nav = document.getElementById('marketplace-nav');
-        nav.innerHTML = marketplaces.map(mp => `
-            <div class="nav-item" data-page="marketplace-${mp.id}" onclick="openMarketplace('${mp.id}')">
-                <span class="nav-item-icon">${mp.visibility==='private'?'🔒':'🏪'}</span> ${mp.name}
-            </div>
-        `).join('');
+    function mpNavHtml(mp) {
+        const icon = mp.slug === 'official' ? '⭐' : (mp.visibility === 'private' ? '🔒' : '🏪');
+        return `<div class="nav-item" data-page="marketplace-${mp.id}" onclick="openMarketplace('${mp.id}')">
+                <span class="nav-item-icon">${icon}</span> ${mp.name}
+            </div>`;
     }
 
-    function renderDashboard() {
-        document.getElementById('stat-marketplaces').textContent = marketplaces.length;
-        const totalPlugins = marketplaces.reduce((s,m) => s + (m.plugin_count||0), 0);
-        document.getElementById('stat-plugins').textContent = totalPlugins;
+    function accessBadge(mp) {
+        if (mp.access === 'admin') return '<span class="card-badge" style="background:var(--accent);color:#fff">admin</span>';
+        if (!mp.can_edit) return '<span class="card-badge" style="background:#444;color:#bbb">view only</span>';
+        if (mp.access === 'publisher') return '<span class="card-badge" style="background:#2b6;color:#fff">publisher</span>';
+        return '';
+    }
 
-        const list = document.getElementById('marketplace-list');
-        if (marketplaces.length === 0) {
-            list.innerHTML = `<div class="empty-card card"><h3>No marketplaces yet</h3><p>Create your first marketplace to start distributing plugins to your Luna agents</p></div>`;
-        } else {
-            list.innerHTML = marketplaces.map(mp => `
-                <div class="card" style="cursor:pointer" onclick="openMarketplace('${mp.id}')">
+    function mpCardHtml(mp) {
+        return `<div class="card" style="cursor:pointer" onclick="openMarketplace('${mp.id}')">
                     <div class="card-header">
                         <div>
-                            <div class="card-title">${mp.name}</div>
-                            <div class="card-subtitle">${mp.slug}.marketplaces.com.ai</div>
+                            <div class="card-title">${mp.name} ${accessBadge(mp)}</div>
+                            <div class="card-subtitle">${mp.slug}.marketplaces.com.ai${mp.org_name ? ' · ' + mp.org_name : ''}</div>
                         </div>
                         <span class="card-badge badge-${mp.visibility}">${mp.visibility}</span>
                     </div>
@@ -441,17 +481,45 @@
                         <span>📦 ${mp.plugin_count || 0} plugins</span>
                         <span>🔑 ${mp.signing_key_public ? mp.signing_key_public.slice(0,12)+'...' : 'generating...'}</span>
                     </div>
-                </div>
-            `).join('');
-        }
+                </div>`;
+    }
+
+    function renderNav() {
+        const created = marketplaces.filter(m => m.group === 'created');
+        const shared = marketplaces.filter(m => m.group !== 'created');
+        document.getElementById('marketplace-nav-created').innerHTML = created.map(mpNavHtml).join('');
+        document.getElementById('marketplace-nav-shared').innerHTML = shared.map(mpNavHtml).join('');
+        document.getElementById('nav-section-shared').style.display = shared.length ? 'block' : 'none';
+    }
+
+    function renderDashboard() {
+        const created = marketplaces.filter(m => m.group === 'created');
+        const shared = marketplaces.filter(m => m.group !== 'created');
+        document.getElementById('stat-marketplaces').textContent = marketplaces.length;
+        const totalPlugins = marketplaces.reduce((s,m) => s + (m.plugin_count||0), 0);
+        document.getElementById('stat-plugins').textContent = totalPlugins;
+
+        const createdEl = document.getElementById('marketplace-list-created');
+        createdEl.innerHTML = created.length
+            ? created.map(mpCardHtml).join('')
+            : `<div class="empty-card card"><h3>No marketplaces yet</h3><p>Create your first marketplace to start distributing plugins to your Luna agents</p></div>`;
+
+        const sharedSection = document.getElementById('shared-section');
+        sharedSection.style.display = shared.length ? 'block' : 'none';
+        document.getElementById('marketplace-list-shared').innerHTML = shared.map(mpCardHtml).join('');
     }
 
     // MARKETPLACE DETAIL
     async function openMarketplace(id) {
         currentMp = marketplaces.find(m => m.id === id);
         if (!currentMp) return;
+        const canEdit = !!currentMp.can_edit;
         document.getElementById('mp-detail-name').textContent = currentMp.name;
         document.getElementById('mp-detail-url').textContent = currentMp.slug + '.marketplaces.com.ai';
+
+        // Gate edit surfaces by permission.
+        document.getElementById('tab-add').style.display = canEdit ? '' : 'none';
+        document.getElementById('mp-readonly-note').style.display = canEdit ? 'none' : 'block';
         
         // Load plugins for this marketplace
         const plugins = await fetch(`/api/catalog/${currentMp.slug}`).then(r=>r.ok?r.json():[]);
@@ -484,7 +552,7 @@
             return;
         }
         el.innerHTML = '<div class="card" style="padding:0.5rem">' + plugins.map(p => `
-            <div class="plugin-row" style="cursor:pointer" onclick="window.open('/browse/${currentMp.slug}/plugin/${p.name}','_blank')">
+            <div class="plugin-row" style="cursor:pointer" onclick="openPluginDrawer('${p.name}')">
                 <div class="plugin-row-icon">${getIcon(p.name)}</div>
                 <div class="plugin-row-info">
                     <div class="plugin-row-name">${p.name}</div>
@@ -617,6 +685,123 @@
     }
     const ICONS = ['🔧','📊','🔌','🧠','💬','📁','🔐','🎨','📈','⚡','🌐','📋','🛡️','🔔','📦'];
     function getIcon(name) { let h=0; for(let i=0;i<name.length;i++) h=((h<<5)-h)+name.charCodeAt(i); return ICONS[Math.abs(h)%ICONS.length]; }
+    function esc(s) { return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function fmtDate(ts) { if(!ts) return '—'; const d=new Date(ts*1000); return d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}) + ' ' + d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); }
+
+    // PLUGIN DETAIL DRAWER
+    let currentPluginName = null;
+    async function openPluginDrawer(name) {
+        currentPluginName = name;
+        const slug = currentMp.slug;
+        document.getElementById('drawer-overlay').classList.remove('hidden');
+        document.getElementById('plugin-drawer').classList.add('open');
+        document.getElementById('drawer-body').innerHTML = '<p style="color:var(--text-muted)">Loading…</p>';
+        const [p, versions] = await Promise.all([
+            fetch(`/api/catalog/${slug}/${name}`).then(r=>r.ok?r.json():null),
+            fetch(`/api/catalog/${slug}/${name}/versions`).then(r=>r.ok?r.json():[]),
+        ]);
+        if (!p) { document.getElementById('drawer-body').innerHTML = '<p>Plugin not found.</p>'; return; }
+        renderDrawer(p, versions);
+    }
+    function closePluginDrawer() {
+        document.getElementById('plugin-drawer').classList.remove('open');
+        document.getElementById('drawer-overlay').classList.add('hidden');
+        currentPluginName = null;
+    }
+    function renderDrawer(p, versions) {
+        const slug = currentMp.slug;
+        const canEdit = !!currentMp.can_edit;
+        document.getElementById('drawer-icon').textContent = getIcon(p.name);
+        document.getElementById('drawer-title').textContent = p.name;
+        document.getElementById('drawer-sub').textContent = `${p.namespace}/${p.name} · v${p.latest_version || '—'}`;
+
+        const caps = [];
+        if (p.requires_tools) caps.push(`tools (${p.tool_count})`);
+        if (p.requires_ui_iframe) caps.push('UI iframe');
+        if (p.requires_settings_tab) caps.push('settings tab');
+        if (p.requires_vault_access) caps.push('vault');
+        (p.requires_egress||[]).forEach(h => caps.push('egress: ' + h));
+
+        const versionsHtml = versions.length ? versions.map(v => `
+            <div class="ver-row ${v.yanked?'ver-yanked':''}">
+                <span class="plugin-row-version">v${esc(v.version)}</span>
+                <span style="color:var(--text-muted)">${fmtDate(v.published_at)}</span>
+                ${v.yanked?'<span class="pill pill-danger">yanked</span>':''}
+                <span style="margin-left:auto; display:flex; gap:0.5rem; align-items:center;">
+                    <a href="/mp/${slug}/plugins/${encodeURIComponent(p.name)}/${encodeURIComponent(v.version)}/artifact.zip" class="pill" style="text-decoration:none">⬇ zip</a>
+                    ${canEdit?`<button class="btn btn-secondary btn-sm" onclick="toggleYank('${esc(v.version)}', ${v.yanked?'false':'true'})">${v.yanked?'Un-yank':'Yank'}</button>`:''}
+                </span>
+            </div>
+        `).join('') : '<p style="color:var(--text-muted);font-size:0.82rem">No versions.</p>';
+
+        const editHtml = canEdit ? `
+            <div class="drawer-section">
+                <h4>Edit metadata</h4>
+                <div class="input-group"><label>Description</label><textarea class="input" id="edit-desc" rows="3">${esc(p.description)}</textarea></div>
+                <div class="input-group"><label>Tags (comma-separated)</label><input class="input" id="edit-tags" value="${esc((p.tags||[]).join(', '))}"></div>
+                <div class="input-group"><label>License</label><input class="input" id="edit-license" value="${esc(p.license)}"></div>
+                <div class="input-group"><label>Source URL</label><input class="input" id="edit-source" value="${esc(p.source_url||'')}"></div>
+                <button class="btn btn-primary btn-sm" onclick="savePluginMeta()">Save changes</button>
+            </div>
+            <div class="drawer-section">
+                <h4>Danger zone</h4>
+                <button class="btn btn-danger btn-sm" onclick="deletePlugin()">Delete plugin</button>
+                <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.5rem">Removes the plugin and all its versions from this catalog. Agents can no longer install it.</p>
+            </div>` : '';
+
+        document.getElementById('drawer-body').innerHTML = `
+            <div class="drawer-section">
+                <p style="font-size:0.88rem; line-height:1.5;">${esc(p.description) || '<span style="color:var(--text-muted)">No description.</span>'}</p>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin-top:0.6rem">${(p.tags||[]).map(t=>`<span class="plugin-row-tag">${esc(t)}</span>`).join('')}</div>
+            </div>
+            <div class="drawer-section">
+                <h4>Details</h4>
+                <dl class="meta-grid">
+                    <dt>License</dt><dd>${esc(p.license)||'—'}</dd>
+                    <dt>Downloads</dt><dd>${(p.download_count||0).toLocaleString()}</dd>
+                    <dt>Uploaded</dt><dd>${fmtDate(p.created_at)}</dd>
+                    <dt>Last updated</dt><dd>${fmtDate(p.updated_at)}</dd>
+                    <dt>Source</dt><dd>${p.source_url?`<a href="${esc(p.source_url)}" target="_blank" style="color:var(--accent)">${esc(p.source_url)}</a>`:'—'}</dd>
+                </dl>
+            </div>
+            <div class="drawer-section">
+                <h4>Capabilities</h4>
+                ${caps.length?`<div style="display:flex;gap:0.4rem;flex-wrap:wrap">${caps.map(c=>`<span class="pill">${esc(c)}</span>`).join('')}</div>`:'<p style="color:var(--text-muted);font-size:0.82rem">None declared.</p>'}
+            </div>
+            <div class="drawer-section">
+                <h4>Version history</h4>
+                ${versionsHtml}
+            </div>
+            ${editHtml}
+        `;
+    }
+    async function savePluginMeta() {
+        const body = {
+            description: document.getElementById('edit-desc').value,
+            tags: document.getElementById('edit-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+            license: document.getElementById('edit-license').value,
+            source_url: document.getElementById('edit-source').value || null,
+        };
+        const res = await api('PATCH', `/api/marketplaces/${currentMp.slug}/plugins/${currentPluginName}`, body);
+        if (res && res.id) { await refreshAfterPluginChange(); openPluginDrawer(currentPluginName); }
+        else { alert((res && res.detail) || 'Save failed'); }
+    }
+    async function toggleYank(version, yanked) {
+        const res = await api('POST', `/api/marketplaces/${currentMp.slug}/plugins/${currentPluginName}/versions/${version}/yank`, {yanked});
+        if (res && res.status) openPluginDrawer(currentPluginName);
+        else alert((res && res.detail) || 'Failed');
+    }
+    async function deletePlugin() {
+        if (!confirm(`Delete "${currentPluginName}" and all its versions? This cannot be undone.`)) return;
+        const res = await api('DELETE', `/api/marketplaces/${currentMp.slug}/plugins/${currentPluginName}`);
+        if (res && res.status === 'deleted') { closePluginDrawer(); await refreshAfterPluginChange(); }
+        else { alert((res && res.detail) || 'Delete failed'); }
+    }
+    async function refreshAfterPluginChange() {
+        const plugins = await fetch(`/api/catalog/${currentMp.slug}`).then(r=>r.ok?r.json():[]);
+        renderMpPlugins(plugins);
+        await loadMarketplaces();
+    }
     </script>
 </body>
 </html>

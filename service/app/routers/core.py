@@ -11,13 +11,20 @@ from nacl.encoding import HexEncoder
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..auth import create_access_token, get_current_user, hash_password, verify_password
+from ..auth import (
+    create_access_token,
+    get_current_user,
+    hash_password,
+    is_global_editor,
+    verify_password,
+)
 from ..database import get_db
 from ..models.db import Marketplace, Org, OrgMember, Plugin, User, UsageEvent, now_ts
 from ..models.schemas import (
     LoginRequest,
     MarketplaceCreate,
     MarketplaceResponse,
+    MyMarketplaceResponse,
     OrgCreate,
     OrgResponse,
     TokenResponse,
@@ -171,6 +178,67 @@ async def list_marketplaces(
             )
         )
     return responses
+
+
+@router.get("/me/marketplaces", response_model=list[MyMarketplaceResponse])
+async def my_marketplaces(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Every marketplace the current user can access, across all their orgs,
+    tagged with their relationship (created vs shared) and edit rights.
+
+    Global editors additionally see the `official` catalog as a shared/admin
+    marketplace so they can manage it from the dashboard.
+    """
+
+    async def _plugin_count(mp_id: str) -> int:
+        r = await db.execute(select(func.count(Plugin.id)).where(Plugin.marketplace_id == mp_id))
+        return r.scalar() or 0
+
+    def _build(mp: Marketplace, org: Org, group: str, access: str, can_edit: bool, count: int):
+        return MyMarketplaceResponse(
+            id=mp.id,
+            name=mp.name,
+            slug=mp.slug,
+            description=mp.description,
+            visibility=mp.visibility,
+            signing_key_public=mp.signing_key_public,
+            access_token=mp.access_token if mp.visibility == "private" else None,
+            created_at=mp.created_at,
+            plugin_count=count,
+            org_name=org.name if org else "",
+            org_slug=org.slug if org else "",
+            group=group,
+            access=access,
+            can_edit=can_edit,
+        )
+
+    items: list[MyMarketplaceResponse] = []
+    seen: set[str] = set()
+
+    rows = await db.execute(
+        select(OrgMember, Org).join(Org, Org.id == OrgMember.org_id).where(OrgMember.user_id == user.id)
+    )
+    for member, org in rows.all():
+        mps = await db.execute(select(Marketplace).where(Marketplace.org_id == org.id))
+        for mp in mps.scalars():
+            if mp.id in seen:
+                continue
+            seen.add(mp.id)
+            can_edit = member.role in ("owner", "publisher")
+            group = "created" if member.role == "owner" else "shared"
+            items.append(_build(mp, org, group, member.role, can_edit, await _plugin_count(mp.id)))
+
+    if is_global_editor(user):
+        r = await db.execute(select(Marketplace).where(Marketplace.slug == "official"))
+        official = r.scalar_one_or_none()
+        if official and official.id not in seen:
+            seen.add(official.id)
+            org = await db.get(Org, official.org_id)
+            items.append(_build(official, org, "shared", "admin", True, await _plugin_count(official.id)))
+
+    return items
 
 
 async def _get_org_for_user(

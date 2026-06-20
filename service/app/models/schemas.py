@@ -60,6 +60,18 @@ class MarketplaceResponse(BaseModel):
     plugin_count: int = 0
 
 
+class MyMarketplaceResponse(MarketplaceResponse):
+    """A marketplace the current user can access, with their relationship to it."""
+
+    org_name: str = ""
+    org_slug: str = ""
+    # "created" = user owns the org; "shared" = member/global-editor of it.
+    group: str = "shared"
+    # The user's effective role: owner | publisher | reviewer | viewer | admin.
+    access: str = "viewer"
+    can_edit: bool = False
+
+
 class PluginResponse(BaseModel):
     id: str
     name: str
@@ -93,6 +105,21 @@ class PluginVersionResponse(BaseModel):
     capabilities_required: dict
     published_at: int
     yanked: bool
+
+
+class PluginUpdate(BaseModel):
+    """Editable plugin metadata (all optional — only provided fields change)."""
+
+    description: str | None = None
+    readme: str | None = None
+    tags: list[str] | None = None
+    license: str | None = None
+    source_url: str | None = None
+    icon_url: str | None = None
+
+
+class YankRequest(BaseModel):
+    yanked: bool = True
 
 
 class PluginPublish(BaseModel):

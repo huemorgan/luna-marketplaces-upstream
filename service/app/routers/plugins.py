@@ -15,7 +15,7 @@ from ..auth import get_current_user, is_global_editor
 from ..database import get_db
 from ..models.db import Artifact, Marketplace, Org, OrgMember, Plugin, PluginVersion, User, UsageEvent, now_ts
 from ..packaging import read_manifest_from_zip
-from ..models.schemas import PluginResponse, PluginVersionResponse
+from ..models.schemas import PluginResponse, PluginUpdate, PluginVersionResponse, YankRequest
 
 router = APIRouter()
 
@@ -323,6 +323,112 @@ async def get_plugin_versions(
         )
         for v in versions
     ]
+
+
+async def _get_plugin_for_editor(
+    mp_slug: str, plugin_name: str, user: User, db: AsyncSession
+) -> tuple[Marketplace, Plugin]:
+    """Resolve a plugin and assert the user may edit its marketplace."""
+    mp = await _get_marketplace_for_publisher(mp_slug, user, db)
+    result = await db.execute(
+        select(Plugin).where(Plugin.marketplace_id == mp.id, Plugin.name == plugin_name)
+    )
+    plugin = result.scalar_one_or_none()
+    if not plugin:
+        raise HTTPException(404, "Plugin not found")
+    return mp, plugin
+
+
+@router.patch("/marketplaces/{mp_slug}/plugins/{plugin_name}", response_model=PluginResponse)
+async def update_plugin(
+    mp_slug: str,
+    plugin_name: str,
+    data: PluginUpdate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Edit a plugin's catalog metadata (description, tags, license, links)."""
+    mp, p = await _get_plugin_for_editor(mp_slug, plugin_name, user, db)
+
+    fields = data.model_dump(exclude_unset=True)
+    for key, value in fields.items():
+        setattr(p, key, value)
+    if fields:
+        p.updated_at = now_ts()
+    await db.commit()
+    await db.refresh(p)
+
+    return PluginResponse(
+        id=p.id,
+        name=p.name,
+        namespace=p.namespace,
+        description=p.description,
+        readme=p.readme or "",
+        tags=p.tags or [],
+        license=p.license,
+        icon_url=p.icon_url,
+        source_url=p.source_url,
+        latest_version=p.latest_version,
+        download_count=p.download_count,
+        created_at=p.created_at,
+        updated_at=p.updated_at,
+        requires_tools=p.requires_tools,
+        requires_ui_iframe=p.requires_ui_iframe,
+        requires_settings_tab=p.requires_settings_tab,
+        requires_vault_access=p.requires_vault_access,
+        requires_egress=p.requires_egress or [],
+        tool_count=p.tool_count,
+        tool_policies=p.tool_policies or [],
+        marketplace_slug=mp.slug,
+        marketplace_name=mp.name,
+    )
+
+
+@router.delete("/marketplaces/{mp_slug}/plugins/{plugin_name}")
+async def delete_plugin(
+    mp_slug: str,
+    plugin_name: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove a plugin and all its versions from the catalog.
+
+    Artifact bytes are content-addressed and may be shared across marketplaces,
+    so they are left on disk (harmless orphans); only catalog rows are removed.
+    """
+    mp, p = await _get_plugin_for_editor(mp_slug, plugin_name, user, db)
+
+    versions = await db.execute(select(PluginVersion).where(PluginVersion.plugin_id == p.id))
+    for v in versions.scalars():
+        await db.delete(v)
+    await db.delete(p)
+    await db.commit()
+    return {"status": "deleted", "plugin": f"{mp.slug}/{plugin_name}"}
+
+
+@router.post("/marketplaces/{mp_slug}/plugins/{plugin_name}/versions/{version}/yank")
+async def yank_version(
+    mp_slug: str,
+    plugin_name: str,
+    version: str,
+    data: YankRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Yank (hide) or un-yank a specific plugin version."""
+    _mp, p = await _get_plugin_for_editor(mp_slug, plugin_name, user, db)
+
+    result = await db.execute(
+        select(PluginVersion).where(
+            PluginVersion.plugin_id == p.id, PluginVersion.version == version
+        )
+    )
+    v = result.scalar_one_or_none()
+    if not v:
+        raise HTTPException(404, "Version not found")
+    v.yanked = data.yanked
+    await db.commit()
+    return {"status": "yanked" if data.yanked else "unyanked", "version": version}
 
 
 async def _get_marketplace_for_publisher(mp_slug: str, user: User, db: AsyncSession) -> Marketplace:
