@@ -24,6 +24,21 @@ ACCESS_TOKEN_EXPIRE_HOURS = 72
 
 security = HTTPBearer(auto_error=False)
 
+# Global editor allow list: emails permitted to publish to ANY catalog (including
+# `official`), independent of org/account membership. Set via the GLOBAL_EDITORS
+# env var as a comma-separated list of emails. Used for catalogs (like official)
+# that have no real account behind them.
+GLOBAL_EDITORS: set[str] = {
+    e.strip().lower()
+    for e in os.environ.get("GLOBAL_EDITORS", "").split(",")
+    if e.strip()
+}
+
+
+def is_global_editor(user: User) -> bool:
+    """True if the user is on the global editor allow list (by email)."""
+    return bool(user.email) and user.email.lower() in GLOBAL_EDITORS
+
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(f"luna-mp-salt:{password}".encode()).hexdigest()

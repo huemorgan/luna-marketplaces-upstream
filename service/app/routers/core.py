@@ -15,6 +15,7 @@ from ..auth import create_access_token, get_current_user, hash_password, verify_
 from ..database import get_db
 from ..models.db import Marketplace, Org, OrgMember, Plugin, User, UsageEvent, now_ts
 from ..models.schemas import (
+    LoginRequest,
     MarketplaceCreate,
     MarketplaceResponse,
     OrgCreate,
@@ -46,7 +47,7 @@ async def signup(data: UserCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/auth/login", response_model=TokenResponse)
-async def login(data: UserCreate, db: AsyncSession = Depends(get_db)):
+async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
     if not user or not verify_password(data.password, user.password_hash):

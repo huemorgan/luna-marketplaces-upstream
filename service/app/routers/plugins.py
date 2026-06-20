@@ -11,7 +11,7 @@ from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import storage
-from ..auth import get_current_user
+from ..auth import get_current_user, is_global_editor
 from ..database import get_db
 from ..models.db import Artifact, Marketplace, Org, OrgMember, Plugin, PluginVersion, User, UsageEvent, now_ts
 from ..packaging import read_manifest_from_zip
@@ -331,6 +331,12 @@ async def _get_marketplace_for_publisher(mp_slug: str, user: User, db: AsyncSess
     if not mp:
         raise HTTPException(404, "Marketplace not found")
 
+    # Global editors (allow list) may publish to any catalog, including `official`
+    # which has no real account behind it.
+    if is_global_editor(user):
+        return mp
+
+    # Otherwise: must be a user of the catalog's account (org) with edit rights.
     membership = await db.execute(
         select(OrgMember).where(OrgMember.org_id == mp.org_id, OrgMember.user_id == user.id)
     )
