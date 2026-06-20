@@ -1,5 +1,5 @@
 name = "plugin-interview"
-version = "0.1.0"
+version = "0.1.1"
 description = "Adaptive knowledge-elicitation interviews → structured briefs."
 entry = "plugin_interview"
 sdk_version = "0"
@@ -24,7 +24,7 @@ First plugin to own its **own DB tables via the SDK** (008.5/phase10, enabler E4
 isolated from core. Three tables (`plugin_interview_{sessions,topics,turns}`) are
 created on enable via `ctx.engine`. Imports only `luna_sdk` + stdlib + SQLAlchemy.
 
-Source: https://github.com/huemorgan2/plugin-interview
+Source: https://github.com/huemorgan/plugin-interview
 """
 
 [requires]

@@ -29,7 +29,7 @@ log = logging.getLogger("plugin-interview")
 class InterviewPlugin(LunaPlugin):
     manifest = PluginManifest(
         name="plugin-interview",
-        version="0.1.0",
+        version="0.1.1",
         description="Adaptive knowledge-elicitation interviews → structured briefs.",
         category="global",
         license="MIT",
@@ -54,7 +54,7 @@ class InterviewPlugin(LunaPlugin):
                 await conn.run_sync(table.create, checkfirst=True)
         self._store = InterviewStore(ctx.db_session_factory)
         register_tools(ctx, self._store)
-        log.info("interview.loaded", tools=9)
+        log.info("plugin-interview loaded (tools=9, tables=%d)", len(ALL_TABLES))
 
     async def prompt_sections(self) -> list[Any]:
         return [CAPABILITY_NOTE]
