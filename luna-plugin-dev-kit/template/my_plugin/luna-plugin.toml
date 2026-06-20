@@ -1,0 +1,31 @@
+# Data manifest — the marketplace + Luna's installer read this WITHOUT importing the
+# plugin's Python. Keep it in sync with the PluginManifest in __init__.py.
+
+name = "my-plugin"            # kebab-case, unique in the marketplace
+version = "0.1.0"             # semver; IMMUTABLE once published — bump to ship changes
+description = "A starter Luna plugin. Replace me."
+entry = "my_plugin"          # the package dir that contains __init__.py
+sdk_version = "0"
+license = "MIT"
+tags = ["starter"]
+readme = """
+# my-plugin
+
+What it does, the tools it adds, and any config/env it needs.
+
+## Tool
+- `hello(name="world")` -> `{"greeting": "Hello, <name>! — from my-plugin"}`
+
+Source: https://github.com/huemorgan/my-plugin
+"""
+
+# Capabilities this plugin needs from the host (display + future compat gate).
+[requires]
+tools = 1
+# depends_on = ["plugin-vault"]   # uncomment if you read secrets from the vault
+
+[[tools]]
+name = "hello"
+description = "Return a friendly greeting."
+policy = "auto_approve"
+risk_level = "low"

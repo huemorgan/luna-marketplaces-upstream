@@ -1,0 +1,22 @@
+{
+  "folders": [
+    { "name": "📖 docs", "path": "docs" },
+    { "name": "🧩 template", "path": "template" },
+    { "name": "🛠 scripts", "path": "scripts" },
+    { "name": "📦 plugins", "path": "plugins" }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/__pycache__": true,
+      "**/*.egg-info": true,
+      "**/.pytest_cache": true
+    },
+    "search.exclude": {
+      "**/dist": true,
+      "**/*.zip": true
+    }
+  },
+  "extensions": {
+    "recommendations": ["ms-python.python"]
+  }
+}

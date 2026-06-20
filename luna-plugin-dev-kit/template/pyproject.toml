@@ -1,0 +1,26 @@
+[project]
+name = "my-plugin"
+version = "0.1.0"
+description = "A starter Luna plugin. Replace me."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    # The Luna plugin SDK. Until it is on PyPI, install from the Luna repo, e.g.:
+    #   pip install "luna_sdk @ git+https://github.com/huemorgan/luna.git#subdirectory=sdk"
+    # or point at a local checkout during development.
+    # "luna_sdk",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["my_plugin"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
