@@ -1,0 +1,33 @@
+name = "plugin-recall"
+version = "0.1.0"
+description = "Verbatim conversation recall — search and quote past messages."
+entry = "plugin_recall"
+sdk_version = "0"
+license = "MIT"
+category = "global"
+default_enabled = true
+tags = ["recall", "memory", "conversation"]
+readme = """
+# plugin-recall
+
+Gives the agent a way back to the **exact earlier words** of a conversation, so a
+condensed recap is never the only thing it can see. One tool,
+`recall_conversation`: keyword search or range fetch, scope `current` (default)
+or `all` (the owner's other conversations), with verbatim role/author/time/content.
+
+Read-only and ungated (`auto_approve`). Built on `luna_sdk` v0 with **enabler
+E6** — reads history through `ctx.conversations` and the active conversation via
+`ctx.current_conversation_id`, never importing core models or runtime globals.
+No `import luna.*`.
+
+Source: https://github.com/huemorgan2/plugin-recall
+"""
+
+[requires]
+tools = 1
+
+[[tools]]
+name = "recall_conversation"
+description = "Retrieve verbatim past messages (current conversation or all), optionally filtered by a keyword query."
+policy = "auto_approve"
+risk_level = "low"
