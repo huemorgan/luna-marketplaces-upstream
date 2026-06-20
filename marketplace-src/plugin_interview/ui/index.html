@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interviews</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- List view -->
+    <section id="list-view">
+      <header class="hd">
+        <div>
+          <h1>Interviews</h1>
+          <p class="sub">Adaptive discovery interviews Luna ran with you, with a live coverage map and the resulting brief.</p>
+        </div>
+        <button id="refresh-btn" class="ghost" title="Refresh">↻ refresh</button>
+      </header>
+      <div id="count" class="muted small"></div>
+      <div id="error" class="err hidden"></div>
+      <div id="loading" class="muted">Loading…</div>
+      <div id="empty" class="card muted hidden">
+        No interviews yet. Ask Luna to "interview me" about something you want to build, and it'll appear here.
+      </div>
+      <div id="list" class="list"></div>
+    </section>
+
+    <!-- Detail view -->
+    <section id="detail-view" class="hidden">
+      <button id="back-btn" class="ghost back">‹ all interviews</button>
+      <div class="detail-head">
+        <div>
+          <h2 id="d-title"></h2>
+          <p id="d-goal" class="sub"></p>
+        </div>
+        <button id="delete-btn" class="icon-danger" title="Delete interview">🗑</button>
+      </div>
+      <div class="badges">
+        <span id="d-status" class="badge"></span>
+        <span id="d-coverage" class="muted small"></span>
+        <span id="d-ready" class="ready hidden">● ready</span>
+      </div>
+
+      <div id="d-domain-wrap" class="block hidden">
+        <div class="label">Domain understanding</div>
+        <div id="d-domain" class="card small"></div>
+      </div>
+
+      <div class="label">Coverage map</div>
+      <div id="d-topics" class="block"></div>
+
+      <div class="label">Transcript</div>
+      <div id="d-turns" class="block"></div>
+
+      <div class="brief-head">
+        <div class="label nomargin">Brief (markdown)</div>
+        <div class="brief-actions">
+          <button id="copy-btn" class="ghost">⧉ copy</button>
+          <button id="download-btn" class="ghost">↓ download</button>
+        </div>
+      </div>
+      <pre id="d-brief" class="brief">…</pre>
+    </section>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
