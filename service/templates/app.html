@@ -381,6 +381,22 @@
     let currentMp = null;
     let officialPlugins = [];
 
+    // INIT — consume a token handed back from the Google OAuth redirect.
+    (function consumeOAuthRedirect() {
+        const params = new URLSearchParams(window.location.search);
+        const t = params.get('token');
+        const err = params.get('auth_error');
+        if (t) {
+            token = t;
+            localStorage.setItem('mp_token', token);
+        }
+        if (t || err) {
+            // Strip the query so refreshes don't re-trigger / leak the token.
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        if (err) { setTimeout(() => alert('Google sign-in failed: ' + err), 50); }
+    })();
+
     // INIT
     if (token) { initApp(); } 
 
@@ -394,8 +410,7 @@
         document.getElementById('login-screen').classList.add('hidden'); 
     }
     function loginGoogle() {
-        // For now, simulate Google OAuth by creating/logging in a demo user
-        loginWithCredentials('demo@marketplaces.com.ai', 'demo123');
+        window.location.href = '/api/auth/google/login';
     }
     async function loginEmail() {
         const email = document.getElementById('login-email').value;

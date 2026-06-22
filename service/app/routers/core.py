@@ -4,16 +4,23 @@ from __future__ import annotations
 
 import secrets
 import uuid
+from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, HTTPException
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from nacl.signing import SigningKey
 from nacl.encoding import HexEncoder
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import (
+    GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET,
+    PUBLIC_BASE_URL,
     create_access_token,
     get_current_user,
+    google_oauth_configured,
     hash_password,
     is_global_editor,
     verify_password,
@@ -61,6 +68,131 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(401, "Invalid credentials")
     token = create_access_token(user.id)
     return TokenResponse(access_token=token)
+
+
+# ---------------------------------------------------------------------------
+# Google OAuth (server-side authorization-code flow)
+# ---------------------------------------------------------------------------
+
+GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
+
+
+def _redirect_uri(request: Request) -> str:
+    """The OAuth callback URI — must match what's registered in Google Cloud."""
+    base = PUBLIC_BASE_URL or str(request.base_url).rstrip("/")
+    return f"{base}/api/auth/google/callback"
+
+
+async def _unique_username(db: AsyncSession, preferred: str) -> str:
+    base = "".join(c for c in preferred.lower() if c.isalnum() or c in "-_") or "user"
+    candidate = base
+    i = 0
+    while True:
+        exists = await db.execute(select(User).where(User.username == candidate))
+        if not exists.scalar_one_or_none():
+            return candidate
+        i += 1
+        candidate = f"{base}{i}"
+
+
+@router.get("/auth/google/login")
+async def google_login(request: Request):
+    """Kick off Google sign-in: redirect the browser to Google's consent page."""
+    if not google_oauth_configured():
+        raise HTTPException(503, "Google sign-in is not configured")
+
+    state = secrets.token_urlsafe(24)
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": _redirect_uri(request),
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "online",
+        "prompt": "select_account",
+        "state": state,
+    }
+    resp = RedirectResponse(f"{GOOGLE_AUTH_URL}?{urlencode(params)}")
+    # CSRF: bind the state to this browser via an httponly cookie checked on callback.
+    resp.set_cookie("g_oauth_state", state, max_age=600, httponly=True, samesite="lax", secure=True)
+    return resp
+
+
+@router.get("/auth/google/callback")
+async def google_callback(
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Handle Google's redirect: exchange code, upsert user, return to app with a token."""
+    if error:
+        return RedirectResponse(f"/?auth_error={error}")
+    if not google_oauth_configured():
+        raise HTTPException(503, "Google sign-in is not configured")
+    if not code:
+        return RedirectResponse("/?auth_error=missing_code")
+
+    cookie_state = request.cookies.get("g_oauth_state")
+    if not state or not cookie_state or state != cookie_state:
+        return RedirectResponse("/?auth_error=state_mismatch")
+
+    redirect_uri = _redirect_uri(request)
+    async with httpx.AsyncClient(timeout=15) as client:
+        token_resp = await client.post(
+            GOOGLE_TOKEN_URL,
+            data={
+                "code": code,
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code",
+            },
+        )
+        if token_resp.status_code != 200:
+            return RedirectResponse("/?auth_error=token_exchange_failed")
+        access_token = token_resp.json().get("access_token")
+        if not access_token:
+            return RedirectResponse("/?auth_error=no_access_token")
+
+        info_resp = await client.get(
+            GOOGLE_USERINFO_URL, headers={"Authorization": f"Bearer {access_token}"}
+        )
+        if info_resp.status_code != 200:
+            return RedirectResponse("/?auth_error=userinfo_failed")
+        info = info_resp.json()
+
+    email = (info.get("email") or "").lower()
+    if not email or not info.get("email_verified", True):
+        return RedirectResponse("/?auth_error=email_unverified")
+
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+    if not user:
+        username = await _unique_username(db, info.get("name") or email.split("@")[0])
+        user = User(
+            id=str(uuid.uuid4()),
+            email=email,
+            username=username,
+            # No usable password for OAuth users; they sign in via Google only.
+            password_hash=hash_password(secrets.token_urlsafe(32)),
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+    jwt_token = create_access_token(user.id)
+    resp = RedirectResponse(f"/?token={jwt_token}")
+    resp.delete_cookie("g_oauth_state")
+    return resp
+
+
+@router.get("/auth/config")
+async def auth_config():
+    """Lets the frontend know which auth methods are available."""
+    return {"google": google_oauth_configured()}
 
 
 @router.post("/orgs", response_model=OrgResponse)

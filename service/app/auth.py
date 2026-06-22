@@ -40,6 +40,19 @@ def is_global_editor(user: User) -> bool:
     return bool(user.email) and user.email.lower() in GLOBAL_EDITORS
 
 
+# Google OAuth (server-side authorization-code flow). All optional — if unset,
+# the Google sign-in endpoints return 503 and the rest of auth keeps working.
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+# Canonical public origin used to build the OAuth redirect URI so it matches
+# exactly what is registered in Google Cloud. e.g. https://luna-marketplaces.onrender.com
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+
+
+def google_oauth_configured() -> bool:
+    return bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET)
+
+
 def hash_password(password: str) -> str:
     return hashlib.sha256(f"luna-mp-salt:{password}".encode()).hexdigest()
 
