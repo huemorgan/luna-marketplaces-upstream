@@ -1,0 +1,63 @@
+name = "plugin-connectors"
+version = "0.1.0"
+description = "Connector aggregator — connect hundreds of platforms (via Composio) with managed OAuth, agent tools, and event triggers."
+entry = "plugin_connectors"
+sdk_version = "0"
+license = "MIT"
+category = "connectors"
+default_enabled = true
+tags = ["connectors", "composio", "integrations", "oauth", "triggers"]
+readme = """
+# plugin-connectors
+
+One aggregator plugin, many providers. Connect Luna to **hundreds of platforms**
+(CRMs, email, project management, dev tools…) through provider drivers
+(Composio first) with **zero per-app code**.
+
+Connect and manage apps in **Settings → Connectors** (a themed iframe served
+from the plugin): search the catalog, connect via managed OAuth or API key, see
+the connected account, and flip per-app **Agent** / **Triggers** exposure.
+
+- **Agent**: each enabled app's actions become skill-gated tools named
+  `{provider}__{app}__{action}` (skill `connector-{app}`), registered
+  **dynamically at runtime**.
+- **Triggers**: the app's events are published through the neutral
+  `luna.triggers` registry as `connector.{app}.{slug}` for any listener
+  (playbooks, …) — the plugin never names its consumers.
+
+Built on `luna_sdk` v0 — no `import luna.*`:
+- **E5** triggers via `luna_sdk.TriggerInfo` + `ctx.trigger_sources`.
+- **E8** host config via `ctx.get_env("LUNA_COMPOSIO_*")` (LUNA_-scoped, no
+  `luna.config`).
+- routes auth via `luna_sdk.get_current_user`; secrets + JSON state via
+  `ctx.vault`; the live instance is shared with routes through a `state.py`
+  singleton.
+
+Provide a Composio API key in the settings tab (free tier available), or run on
+a deployment that injects `LUNA_COMPOSIO_API_KEY` + `LUNA_COMPOSIO_BASE_URL`.
+
+Source: https://github.com/huemorgan2/plugin-connectors
+"""
+
+[requires]
+tools = 3
+tables = 0
+depends_on = ["plugin-vault"]
+
+[[tools]]
+name = "connector_search_apps"
+description = "Search the connector catalog (hundreds of platforms) for an integration; returns connection/enablement status per app."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "connector_list_connected"
+description = "List connector apps and their status (connected, enabled for agent, enabled for triggers, skill to load)."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "connector_request_enable"
+description = "Enable a connector app for use (owner approval; OAuth apps return an auth_url). exposure: agent | triggers | both."
+policy = "prompt_always"
+risk_level = "medium"
