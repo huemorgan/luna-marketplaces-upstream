@@ -189,6 +189,29 @@ Map back to Concerns Review — ✓ or explain gap.
 Only if something failed acceptance criteria.
 ```
 
+## Phase 4b — Execution summary (`plans/NNN-short-slug/execution-summary.md`)
+
+**Mandatory after every executed plan.** Write `plans/NNN-short-slug/execution-summary.md`
+so the planning folder tells the whole story on its own: PLAN.md is the intent,
+execution-summary.md is the outcome. `tests/NNN/report.md` stays the raw test evidence;
+the summary is the narrative a future planner reads first.
+
+```markdown
+# NNN — Human Title — Execution Summary
+
+## What was accomplished
+What actually shipped, in plain language. Note anything planned but not delivered.
+
+## What we discovered along the way
+Surprises, wrong plan assumptions, non-obvious behaviors of the codebase or
+third-party services, dead ends tried and abandoned — the things that cost time
+and would cost the next agent time again.
+
+## Things to consider in the future
+Follow-ups, deferred work, known risks left in place, upgrade paths, and any
+"if we ever touch X again, remember Y" notes.
+```
+
 ## Phase 5 — Verify & close
 
 Run everything listed under **Verification** in the plan:
@@ -254,6 +277,7 @@ Read these when present; fold into Concerns Review and Verification:
 - Skipping PLAN.md and coding first
 - Mismatched `NNN` between `plans/` and `tests/`
 - Empty report or report before any verification attempt
+- Closing a plan without `plans/NNN-slug/execution-summary.md` (accomplished / discovered / future)
 - Destructive migrations without data preservation
 - Claiming "done" with failing tests undocumented in report
 - Plan ships with `## Architecture impact: ADD` but `vision/architecture2.md` unchanged
@@ -272,6 +296,7 @@ Read these when present; fold into Concerns Review and Verification:
 - [ ] tests/NNN-slug/*.spec.js or *.test.js added
 - [ ] Regression suites run if shared code touched
 - [ ] tests/NNN-slug/report.md complete with real results
+- [ ] plans/NNN-slug/execution-summary.md written (accomplished / discovered / future considerations)
 - [ ] vision/architecture2.md updated for every ADD / CONFLICT change
 - [ ] Acceptance criteria checked off
 ```
