@@ -74,9 +74,18 @@ def _versioned_index() -> Response:
     no-cache; index.html itself is never edge-cached. Stamping the version onto
     the hashed asset URLs guarantees a fresh fetch on every release.
     """
+    # Buster = the PLUGIN's own version: this dist changes exactly when the
+    # plugin version does (core releases don't touch it). Also keeps the
+    # package free of `luna.*` imports — SDK-only is the published contract.
     try:
-        from luna import __version__ as _v
-    except Exception:  # noqa: BLE001 — out-of-tree install without luna on path
+        import tomllib
+
+        _v = str(
+            tomllib.loads(
+                (Path(__file__).parent / "luna-plugin.toml").read_text()
+            )["version"]
+        )
+    except Exception:  # noqa: BLE001 — manifest missing in odd dev layouts
         _v = "0"
 
     html = (_UI_DIR / "index.html").read_text()
