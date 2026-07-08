@@ -292,6 +292,11 @@
             <span class="filter-chip" data-filter="commercial" onclick="setFilter('commercial')">Commercial</span>
         </div>
 
+        <div id="bundles-section" style="display:none; margin-bottom:2rem;">
+            <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; margin-bottom:0.75rem;">✨ Bundles — curated plugin packs</div>
+            <div class="grid" id="bundles-grid"></div>
+        </div>
+
         <div class="grid" id="plugins-grid"></div>
         <div class="empty-state" id="empty-state" style="display:none;">
             <h3>No plugins found</h3>
@@ -324,6 +329,37 @@
                 document.getElementById('plugins-grid').innerHTML = '';
                 document.getElementById('empty-state').style.display = 'block';
             }
+            loadBundles();
+        }
+
+        async function loadBundles() {
+            let bundles = [];
+            try {
+                const res = await fetch(`/api/catalog/${mpSlug}/bundles`);
+                if (res.ok) bundles = await res.json();
+            } catch(e) { /* bundles are optional */ }
+            if (!bundles.length) return;
+            document.getElementById('bundles-section').style.display = 'block';
+            document.getElementById('bundles-grid').innerHTML = bundles.map(b => `
+                <div class="card" style="border-color: var(--accent);">
+                    <div class="card-header">
+                        <div class="card-icon">${b.icon_url ? `<img src="${b.icon_url}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;">` : '🎁'}</div>
+                        <div class="card-title-area">
+                            <div class="card-name">${b.title || b.name}</div>
+                            <div class="card-namespace">bundle · ${(b.items||[]).length} plugins</div>
+                        </div>
+                        ${b.latest_version ? `<span class="card-version">v${b.latest_version}</span>` : ''}
+                    </div>
+                    <div class="card-description">${b.description || 'No description'}</div>
+                    <div class="card-tags">
+                        ${(b.items||[]).map(i => `<span class="tag">📦 ${i.plugin_name} v${i.version}</span>`).join('')}
+                    </div>
+                    <div class="card-footer">
+                        <div class="card-badges">${(b.tags||[]).map(t=>`<span class="badge">${t}</span>`).join('')}</div>
+                        <span class="card-downloads">⬇ ${(b.download_count||0).toLocaleString()}</span>
+                    </div>
+                </div>
+            `).join('');
         }
 
         function renderStats() {

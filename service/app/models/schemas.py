@@ -122,6 +122,77 @@ class YankRequest(BaseModel):
     yanked: bool = True
 
 
+class BundleItem(BaseModel):
+    """A pinned member plugin inside a bundle version."""
+
+    plugin_name: str
+    version: str
+
+
+class BundleCreate(BaseModel):
+    """Create a bundle together with its first version."""
+
+    name: str  # slug-like identifier, unique per marketplace
+    title: str
+    version: str = "1.0.0"
+    description: str = ""
+    readme: str = ""
+    tags: list[str] = Field(default_factory=list)
+    icon_url: str | None = None
+    items: list[BundleItem]
+
+
+class BundleUpdate(BaseModel):
+    """Editable bundle marketing metadata (only provided fields change)."""
+
+    title: str | None = None
+    description: str | None = None
+    readme: str | None = None
+    tags: list[str] | None = None
+    icon_url: str | None = None
+
+
+class BundleVersionCreate(BaseModel):
+    """Publish a new bundle version with a (possibly changed) pin set."""
+
+    version: str
+    items: list[BundleItem]
+
+
+class BundleItemResolved(BundleItem):
+    """A pin enriched with the member plugin's catalog state."""
+
+    description: str = ""
+    icon_url: str | None = None
+    latest_available: str | None = None  # the plugin's own latest version
+    exists: bool = True
+
+
+class BundleVersionResponse(BaseModel):
+    id: str
+    version: str
+    items: list[BundleItem]
+    published_at: int
+    yanked: bool
+
+
+class BundleResponse(BaseModel):
+    id: str
+    name: str
+    title: str
+    description: str
+    readme: str
+    tags: list[str]
+    icon_url: str | None
+    latest_version: str | None
+    download_count: int
+    created_at: int
+    updated_at: int
+    items: list[BundleItemResolved] = Field(default_factory=list)
+    marketplace_slug: str = ""
+    marketplace_name: str = ""
+
+
 class PluginPublish(BaseModel):
     """Metadata submitted alongside the artifact upload."""
     manifest: dict

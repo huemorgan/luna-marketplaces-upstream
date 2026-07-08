@@ -127,6 +127,48 @@ class PluginVersion(Base):
     plugin = relationship("Plugin", back_populates="versions")
 
 
+class Bundle(Base):
+    """A curated, marketed group of existing plugins in one marketplace.
+
+    A bundle has its own marketing surface (title, image, readme, tags) and its
+    own version line. Each BundleVersion pins exact member plugin versions —
+    a member plugin releasing a new version never changes a bundle; an editor
+    must publish a new bundle version with updated pins.
+    """
+    __tablename__ = "bundles"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    marketplace_id = Column(String, ForeignKey("marketplaces.id"), nullable=False)
+    name = Column(String, nullable=False, index=True)  # slug-like, unique per marketplace
+    title = Column(String, nullable=False, default="")  # display name
+    description = Column(Text, default="")
+    readme = Column(Text, default="")
+    tags = Column(JSON, default=list)
+    icon_url = Column(String, nullable=True)
+    latest_version = Column(String, nullable=True)
+    download_count = Column(Integer, default=0)
+    created_at = Column(Integer, default=now_ts)
+    updated_at = Column(Integer, default=now_ts)
+
+    marketplace = relationship("Marketplace")
+    versions = relationship("BundleVersion", back_populates="bundle")
+
+
+class BundleVersion(Base):
+    """An immutable bundle release: a version string + explicit plugin pins."""
+    __tablename__ = "bundle_versions"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    bundle_id = Column(String, ForeignKey("bundles.id"), nullable=False)
+    version = Column(String, nullable=False)
+    # [{"plugin_name": "plugin-wiki", "version": "0.3.2"}, ...]
+    items = Column(JSON, nullable=False, default=list)
+    published_at = Column(Integer, default=now_ts)
+    yanked = Column(Boolean, default=False)
+
+    bundle = relationship("Bundle", back_populates="versions")
+
+
 class Artifact(Base):
     """Metadata for a stored artifact. Bytes live on the mounted disk,
     content-addressed by sha256 (see app/storage.py)."""

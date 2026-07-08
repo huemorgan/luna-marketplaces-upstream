@@ -259,12 +259,31 @@
                 </div>
                 <div class="tabs">
                     <div class="tab active" id="tab-plugins" onclick="showMpTab('plugins')">Plugins</div>
+                    <div class="tab" id="tab-bundles" onclick="showMpTab('bundles')">Bundles</div>
                     <div class="tab" id="tab-add" onclick="showMpTab('add')">Add Plugin</div>
                     <div class="tab" id="tab-settings" onclick="showMpTab('settings')">Settings</div>
                 </div>
                 <div id="mp-readonly-note" style="display:none; font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">👁️ You have view-only access to this marketplace.</div>
                 <div id="mp-tab-plugins">
                     <div id="mp-plugins-list"></div>
+                </div>
+                <div id="mp-tab-bundles" class="hidden">
+                    <div id="mp-bundles-list"></div>
+                    <div id="bundle-create-card" class="card" style="margin-top:1rem; display:none;">
+                        <h3 style="font-size:1rem; margin-bottom:0.5rem;">New Bundle</h3>
+                        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem;">A bundle groups existing plugins with its own marketing page and version. Plugin versions are <b>pinned</b> — a plugin releasing an update never changes a published bundle.</p>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 1rem;">
+                            <div class="input-group"><label>Name (slug)</label><input class="input" id="new-bundle-name" placeholder="mission-oriented"></div>
+                            <div class="input-group"><label>Title (display)</label><input class="input" id="new-bundle-title" placeholder="Mission Oriented"></div>
+                            <div class="input-group"><label>Bundle version</label><input class="input" id="new-bundle-version" value="1.0.0"></div>
+                            <div class="input-group"><label>Image URL</label><input class="input" id="new-bundle-icon" placeholder="https://..."></div>
+                        </div>
+                        <div class="input-group"><label>Description</label><textarea class="input" id="new-bundle-desc" rows="2"></textarea></div>
+                        <div class="input-group"><label>Readme (markdown, marketing page)</label><textarea class="input" id="new-bundle-readme" rows="4"></textarea></div>
+                        <div class="input-group"><label>Tags (comma-separated)</label><input class="input" id="new-bundle-tags"></div>
+                        <div class="input-group"><label>Plugins in this bundle (pinned versions)</label><div id="new-bundle-picker"></div></div>
+                        <button class="btn btn-primary btn-sm" onclick="createBundle()">Create Bundle</button>
+                    </div>
                 </div>
                 <div id="mp-tab-add" class="hidden">
                     <div class="card">
@@ -536,9 +555,11 @@
         document.getElementById('tab-add').style.display = canEdit ? '' : 'none';
         document.getElementById('mp-readonly-note').style.display = canEdit ? 'none' : 'block';
         
-        // Load plugins for this marketplace
+        // Load plugins + bundles for this marketplace
         const plugins = await fetch(`/api/catalog/${currentMp.slug}`).then(r=>r.ok?r.json():[]);
         renderMpPlugins(plugins);
+        currentMpPlugins = plugins;
+        await loadBundles();
         
         // Settings
         document.getElementById('mp-setting-name').value = currentMp.name;
@@ -621,11 +642,11 @@
 
     // TABS
     function showMpTab(tab) {
-        ['plugins','add','settings'].forEach(t => {
+        ['plugins','bundles','add','settings'].forEach(t => {
             document.getElementById(`mp-tab-${t}`).classList.toggle('hidden', t !== tab);
         });
         document.querySelectorAll('#page-marketplace .tab').forEach((el,i) => {
-            el.classList.toggle('active', ['plugins','add','settings'][i] === tab);
+            el.classList.toggle('active', ['plugins','bundles','add','settings'][i] === tab);
         });
     }
 
@@ -815,7 +836,230 @@
     async function refreshAfterPluginChange() {
         const plugins = await fetch(`/api/catalog/${currentMp.slug}`).then(r=>r.ok?r.json():[]);
         renderMpPlugins(plugins);
+        currentMpPlugins = plugins;
         await loadMarketplaces();
+    }
+
+    // ================= BUNDLES =================
+    let currentMpPlugins = [];
+    let currentBundles = [];
+    let currentBundleName = null;
+
+    async function loadBundles() {
+        currentBundles = await fetch(`/api/catalog/${currentMp.slug}/bundles`).then(r=>r.ok?r.json():[]);
+        renderBundles();
+    }
+
+    function bundleIconHtml(b, size) {
+        const px = size || 44;
+        return b.icon_url
+            ? `<img src="${esc(b.icon_url)}" style="width:${px}px;height:${px}px;border-radius:10px;object-fit:cover;" onerror="this.outerHTML='<div class=&quot;plugin-row-icon&quot; style=&quot;width:${px}px;height:${px}px&quot;>🎁</div>'">`
+            : `<div class="plugin-row-icon" style="width:${px}px;height:${px}px;">🎁</div>`;
+    }
+
+    function renderBundles() {
+        const el = document.getElementById('mp-bundles-list');
+        const canEdit = !!currentMp.can_edit;
+        document.getElementById('bundle-create-card').style.display = canEdit ? 'block' : 'none';
+        if (canEdit) renderBundlePicker('new-bundle-picker', {});
+
+        if (!currentBundles.length) {
+            el.innerHTML = '<div class="empty-card card"><h3>No bundles yet</h3><p>A bundle groups existing plugins into one marketed, versioned pack</p></div>';
+            return;
+        }
+        el.innerHTML = '<div class="card" style="padding:0.5rem">' + currentBundles.map(b => `
+            <div class="plugin-row" style="cursor:pointer" onclick="openBundleDrawer('${esc(b.name)}')">
+                ${bundleIconHtml(b, 40)}
+                <div class="plugin-row-info">
+                    <div class="plugin-row-name">${esc(b.title || b.name)}</div>
+                    <div class="plugin-row-desc">${esc(b.description)}</div>
+                </div>
+                <div class="plugin-row-meta">
+                    <span class="plugin-row-tag">📦 ${(b.items||[]).length} plugins</span>
+                    <span class="plugin-row-version">v${esc(b.latest_version || '—')}</span>
+                </div>
+            </div>
+        `).join('') + '</div>';
+    }
+
+    // Plugin picker: checkbox per marketplace plugin + a pinned-version input.
+    // `preselected` = {plugin_name: version} to tick and prefill.
+    function renderBundlePicker(containerId, preselected) {
+        const el = document.getElementById(containerId);
+        if (!currentMpPlugins.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.82rem">No plugins in this marketplace yet.</p>'; return; }
+        el.innerHTML = '<div style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:0.4rem;">' + currentMpPlugins.map(p => {
+            const checked = preselected[p.name] !== undefined;
+            const ver = preselected[p.name] || p.latest_version || '';
+            return `<div style="display:flex;align-items:center;gap:0.6rem;padding:0.3rem 0.4rem;">
+                <input type="checkbox" class="picker-check" data-plugin="${esc(p.name)}" ${checked?'checked':''}>
+                <span style="flex:1;font-size:0.85rem">${getIcon(p.name)} ${esc(p.name)}</span>
+                <span style="font-size:0.72rem;color:var(--text-muted)">pin:</span>
+                <input class="input picker-version" data-plugin="${esc(p.name)}" value="${esc(ver)}" style="width:90px;padding:0.25rem 0.5rem;font-size:0.78rem;font-family:monospace;">
+            </div>`;
+        }).join('') + '</div>';
+    }
+
+    function collectPickerItems(containerId) {
+        const el = document.getElementById(containerId);
+        const items = [];
+        el.querySelectorAll('.picker-check').forEach(cb => {
+            if (!cb.checked) return;
+            const name = cb.dataset.plugin;
+            const verInput = el.querySelector(`.picker-version[data-plugin="${CSS.escape(name)}"]`);
+            items.push({plugin_name: name, version: (verInput.value||'').trim()});
+        });
+        return items;
+    }
+
+    async function createBundle() {
+        const items = collectPickerItems('new-bundle-picker');
+        if (!items.length) { alert('Select at least one plugin for the bundle'); return; }
+        const body = {
+            name: document.getElementById('new-bundle-name').value.trim(),
+            title: document.getElementById('new-bundle-title').value.trim(),
+            version: document.getElementById('new-bundle-version').value.trim() || '1.0.0',
+            icon_url: document.getElementById('new-bundle-icon').value.trim() || null,
+            description: document.getElementById('new-bundle-desc').value,
+            readme: document.getElementById('new-bundle-readme').value,
+            tags: document.getElementById('new-bundle-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+            items,
+        };
+        if (!body.name || !body.title) { alert('Name and title are required'); return; }
+        const res = await api('POST', `/api/marketplaces/${currentMp.slug}/bundles`, body);
+        if (res && res.id) {
+            ['name','title','icon','desc','readme','tags'].forEach(f => document.getElementById('new-bundle-'+f).value='');
+            document.getElementById('new-bundle-version').value = '1.0.0';
+            await loadBundles();
+            openBundleDrawer(res.name);
+        } else { alert((res && res.detail) || 'Create failed'); }
+    }
+
+    // ---- Bundle drawer (reuses the plugin drawer shell) ----
+    async function openBundleDrawer(name) {
+        currentBundleName = name; currentPluginName = null;
+        document.getElementById('drawer-overlay').classList.remove('hidden');
+        document.getElementById('plugin-drawer').classList.add('open');
+        document.getElementById('drawer-body').innerHTML = '<p style="color:var(--text-muted)">Loading…</p>';
+        const slug = currentMp.slug;
+        const [b, versions] = await Promise.all([
+            fetch(`/api/catalog/${slug}/bundles/${name}`).then(r=>r.ok?r.json():null),
+            fetch(`/api/catalog/${slug}/bundles/${name}/versions`).then(r=>r.ok?r.json():[]),
+        ]);
+        if (!b) { document.getElementById('drawer-body').innerHTML = '<p>Bundle not found.</p>'; return; }
+        renderBundleDrawer(b, versions);
+    }
+
+    function renderBundleDrawer(b, versions) {
+        const canEdit = !!currentMp.can_edit;
+        document.getElementById('drawer-icon').outerHTML = `<span id="drawer-icon">${bundleIconHtml(b, 44)}</span>`;
+        document.getElementById('drawer-title').textContent = b.title || b.name;
+        document.getElementById('drawer-sub').textContent = `bundle · ${b.name} · v${b.latest_version || '—'}`;
+
+        const itemsHtml = (b.items||[]).map(i => `
+            <div class="ver-row">
+                <span>${getIcon(i.plugin_name)} ${esc(i.plugin_name)}</span>
+                <span class="plugin-row-version">pinned v${esc(i.version)}</span>
+                ${i.latest_available && i.latest_available !== i.version
+                    ? `<span class="pill" title="The plugin has a newer release; this bundle still pins v${esc(i.version)} until you publish a new bundle version.">plugin latest: v${esc(i.latest_available)}</span>`
+                    : ''}
+                ${!i.exists ? '<span class="pill pill-danger">missing</span>' : ''}
+            </div>
+        `).join('') || '<p style="color:var(--text-muted);font-size:0.82rem">No plugins pinned.</p>';
+
+        const versionsHtml = versions.length ? versions.map(v => `
+            <div class="ver-row ${v.yanked?'ver-yanked':''}">
+                <span class="plugin-row-version">v${esc(v.version)}</span>
+                <span style="color:var(--text-muted)">${fmtDate(v.published_at)}</span>
+                <span style="color:var(--text-muted);font-size:0.72rem">${v.items.map(i=>`${esc(i.plugin_name)}@${esc(i.version)}`).join(', ')}</span>
+                ${v.yanked?'<span class="pill pill-danger">yanked</span>':''}
+                ${canEdit?`<span style="margin-left:auto"><button class="btn btn-secondary btn-sm" onclick="toggleBundleYank('${esc(v.version)}', ${v.yanked?'false':'true'})">${v.yanked?'Un-yank':'Yank'}</button></span>`:''}
+            </div>
+        `).join('') : '<p style="color:var(--text-muted);font-size:0.82rem">No versions.</p>';
+
+        const editHtml = canEdit ? `
+            <div class="drawer-section">
+                <h4>Edit marketing</h4>
+                <div class="input-group"><label>Title</label><input class="input" id="bedit-title" value="${esc(b.title)}"></div>
+                <div class="input-group"><label>Description</label><textarea class="input" id="bedit-desc" rows="3">${esc(b.description)}</textarea></div>
+                <div class="input-group"><label>Readme</label><textarea class="input" id="bedit-readme" rows="4">${esc(b.readme)}</textarea></div>
+                <div class="input-group"><label>Image URL</label><input class="input" id="bedit-icon" value="${esc(b.icon_url||'')}"></div>
+                <div class="input-group"><label>Tags (comma-separated)</label><input class="input" id="bedit-tags" value="${esc((b.tags||[]).join(', '))}"></div>
+                <button class="btn btn-primary btn-sm" onclick="saveBundleMeta()">Save changes</button>
+            </div>
+            <div class="drawer-section">
+                <h4>Publish new version</h4>
+                <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem">Updating pinned plugin versions requires publishing a new bundle version — this is the deliberate action.</p>
+                <div class="input-group"><label>New bundle version</label><input class="input" id="bver-version" placeholder="e.g. ${esc(nextPatch(b.latest_version))}" value="${esc(nextPatch(b.latest_version))}"></div>
+                <div class="input-group"><label>Pins</label><div id="bver-picker"></div></div>
+                <button class="btn btn-primary btn-sm" onclick="publishBundleVersion()">Publish version</button>
+            </div>
+            <div class="drawer-section">
+                <h4>Danger zone</h4>
+                <button class="btn btn-danger btn-sm" onclick="deleteBundle()">Delete bundle</button>
+                <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.5rem">Removes the bundle and its versions. The member plugins themselves are untouched.</p>
+            </div>` : '';
+
+        document.getElementById('drawer-body').innerHTML = `
+            <div class="drawer-section">
+                <p style="font-size:0.88rem; line-height:1.5;">${esc(b.description) || '<span style="color:var(--text-muted)">No description.</span>'}</p>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin-top:0.6rem">${(b.tags||[]).map(t=>`<span class="plugin-row-tag">${esc(t)}</span>`).join('')}</div>
+            </div>
+            <div class="drawer-section">
+                <h4>Plugins in this bundle (v${esc(b.latest_version || '—')})</h4>
+                ${itemsHtml}
+            </div>
+            <div class="drawer-section">
+                <h4>Version history</h4>
+                ${versionsHtml}
+            </div>
+            ${editHtml}
+        `;
+        if (canEdit) {
+            const pre = {};
+            (b.items||[]).forEach(i => pre[i.plugin_name] = i.version);
+            renderBundlePicker('bver-picker', pre);
+        }
+    }
+
+    function nextPatch(v) {
+        const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(v || '');
+        return m ? `${m[1]}.${m[2]}.${Number(m[3])+1}` : '';
+    }
+
+    async function saveBundleMeta() {
+        const body = {
+            title: document.getElementById('bedit-title').value.trim(),
+            description: document.getElementById('bedit-desc').value,
+            readme: document.getElementById('bedit-readme').value,
+            icon_url: document.getElementById('bedit-icon').value.trim() || null,
+            tags: document.getElementById('bedit-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+        };
+        const res = await api('PATCH', `/api/marketplaces/${currentMp.slug}/bundles/${currentBundleName}`, body);
+        if (res && res.id) { await loadBundles(); openBundleDrawer(currentBundleName); }
+        else { alert((res && res.detail) || 'Save failed'); }
+    }
+
+    async function publishBundleVersion() {
+        const version = document.getElementById('bver-version').value.trim();
+        const items = collectPickerItems('bver-picker');
+        if (!version) { alert('Version required'); return; }
+        if (!items.length) { alert('Select at least one plugin'); return; }
+        const res = await api('POST', `/api/marketplaces/${currentMp.slug}/bundles/${currentBundleName}/versions`, {version, items});
+        if (res && res.id) { await loadBundles(); openBundleDrawer(currentBundleName); }
+        else { alert((res && res.detail) || 'Publish failed'); }
+    }
+
+    async function toggleBundleYank(version, yanked) {
+        const res = await api('POST', `/api/marketplaces/${currentMp.slug}/bundles/${currentBundleName}/versions/${version}/yank`, {yanked});
+        if (res && res.status) { await loadBundles(); openBundleDrawer(currentBundleName); }
+        else alert((res && res.detail) || 'Failed');
+    }
+
+    async function deleteBundle() {
+        if (!confirm(`Delete bundle "${currentBundleName}"? Member plugins are not affected.`)) return;
+        const res = await api('DELETE', `/api/marketplaces/${currentMp.slug}/bundles/${currentBundleName}`);
+        if (res && res.status === 'deleted') { closePluginDrawer(); await loadBundles(); }
+        else { alert((res && res.detail) || 'Delete failed'); }
     }
     </script>
 </body>

@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import storage
 from ..database import get_db
-from ..models.db import Marketplace, Plugin, PluginVersion, UsageEvent, now_ts
+from ..models.db import Bundle, BundleVersion, Marketplace, Plugin, PluginVersion, UsageEvent, now_ts
 
 router = APIRouter(prefix="/mp", tags=["registry"])
 
@@ -84,7 +84,64 @@ async def index(slug: str, db: AsyncSession = Depends(get_db)):
         "marketplace": {"id": mp.id, "name": mp.name},
         "protocol_version": PROTOCOL_VERSION,
         "plugins": entries,
+        "bundles": await _bundle_entries(mp, db),
     })
+
+
+async def _bundle_entries(mp: Marketplace, db: AsyncSession) -> list[dict]:
+    """Bundle entries with FULLY RESOLVED items (artifact path + sha256 of the
+    pinned plugin version), so Luna installs members through the same
+    integrity gate as single plugins. Additive to protocol v0 — old clients
+    ignore the key.
+    """
+    from .bundles import pick_latest_bundle_version
+
+    result = await db.execute(select(Bundle).where(Bundle.marketplace_id == mp.id))
+    out: list[dict] = []
+    for b in result.scalars().all():
+        bv = await pick_latest_bundle_version(db, b)
+        if bv is None:
+            continue
+
+        items: list[dict] = []
+        complete = True
+        for item in bv.items or []:
+            pname, pver = item.get("plugin_name"), item.get("version")
+            p_result = await db.execute(
+                select(Plugin).where(Plugin.marketplace_id == mp.id, Plugin.name == pname)
+            )
+            plugin = p_result.scalar_one_or_none()
+            pv = None
+            if plugin:
+                pv_result = await db.execute(
+                    select(PluginVersion).where(
+                        PluginVersion.plugin_id == plugin.id, PluginVersion.version == pver
+                    )
+                )
+                pv = pv_result.scalar_one_or_none()
+            if pv is None:
+                # A pin pointing at a deleted plugin/version makes the bundle
+                # uninstallable — drop the whole bundle from the index.
+                complete = False
+                break
+            items.append({
+                "name": pname,
+                "version": pver,
+                "artifact": f"plugins/{pname}/{pver}/artifact.zip",
+                "sha256": pv.artifact_hash,
+            })
+        if not complete:
+            continue
+
+        out.append({
+            "name": b.name,
+            "version": bv.version,
+            "title": b.title or b.name,
+            "description": b.description or "",
+            "icon_url": b.icon_url,
+            "items": items,
+        })
+    return out
 
 
 @router.get("/{slug}/plugins/{name}/{version}/artifact.zip")

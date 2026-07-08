@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .database import init_db
+from .routers.bundles import router as bundles_router
 from .routers.core import router as core_router
 from .routers.plugins import router as plugins_router
 from .routers.registry import router as registry_router
@@ -50,6 +51,8 @@ app = FastAPI(
 )
 
 app.include_router(core_router, prefix="/api")
+# bundles before plugins: /catalog/{slug}/bundles must win over /catalog/{slug}/{plugin_name}
+app.include_router(bundles_router, prefix="/api")
 app.include_router(plugins_router, prefix="/api")
 app.include_router(registry_router)
 
