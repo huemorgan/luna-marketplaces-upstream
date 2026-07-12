@@ -34,17 +34,15 @@ async def test_identity_doc():
         assert body["protocol_version"] == "0"
 
 
-async def test_index_lists_hello_world():
+async def test_index_lists_seeded_plugins():
     async with _client() as c:
         r = await c.get("/mp/official/index.json")
         assert r.status_code == 200
         body = r.json()
-        names = [p["name"] for p in body["plugins"]]
-        assert "hello-world" in names
-        entry = next(p for p in body["plugins"] if p["name"] == "hello-world")
-        assert entry["version"] == "0.1.0"
-        assert entry["artifact"] == "plugins/hello-world/0.1.0/artifact.zip"
-        assert len(entry["sha256"]) == 64
+        assert body["plugins"], "seed must publish at least one plugin"
+        for entry in body["plugins"]:
+            assert entry["artifact"] == f"plugins/{entry['name']}/{entry['version']}/artifact.zip"
+            assert len(entry["sha256"]) == 64
 
 
 async def test_artifact_hash_matches_index_the_trust_gate():

@@ -11,7 +11,7 @@ from app.packaging import (
 )
 
 REPO = Path(__file__).resolve().parents[2]
-HELLO = REPO / "marketplace-src" / "hello_world"
+HELLO = REPO / "examples" / "hello_world_2"
 
 
 def test_packaging_is_deterministic():
@@ -23,7 +23,7 @@ def test_packaging_is_deterministic():
 
 def test_package_source_returns_manifest_and_hash():
     zip_bytes, sha256, manifest = package_source(HELLO)
-    assert manifest["name"] == "hello-world"
+    assert manifest["name"] == "hello-world-2"
     assert manifest["version"] == "0.1.0"
     assert sha256 == sha256_hex(zip_bytes)
 
@@ -31,13 +31,13 @@ def test_package_source_returns_manifest_and_hash():
 def test_artifact_has_single_top_level_dir_with_manifest_and_init():
     zip_bytes, _, _ = package_source(HELLO)
     manifest, top = read_manifest_from_zip(zip_bytes)
-    assert top == "hello_world"
-    assert manifest["name"] == "hello-world"
+    assert top == "hello_world_2"
+    assert manifest["name"] == "hello-world-2"
 
 
 def test_index_entry_shape_matches_luna_v0():
     zip_bytes, sha256, manifest = package_source(HELLO)
     entry = index_entry_from_manifest(manifest, sha256)
     assert set(entry) >= {"name", "version", "description", "sdk_version", "artifact", "sha256"}
-    assert entry["artifact"] == "plugins/hello-world/0.1.0/artifact.zip"
+    assert entry["artifact"] == "plugins/hello-world-2/0.1.0/artifact.zip"
     assert entry["sha256"] == sha256
