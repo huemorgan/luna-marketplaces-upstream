@@ -781,8 +781,8 @@
             </div>
             <div class="drawer-section">
                 <h4>Danger zone</h4>
-                <button class="btn btn-danger btn-sm" onclick="deletePlugin()">Delete plugin</button>
-                <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.5rem">Removes the plugin and all its versions from this catalog. Agents can no longer install it.</p>
+                <button class="btn btn-danger btn-sm" onclick="deletePlugin()">Delete plugin permanently</button>
+                <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.5rem">Permanently erases the plugin: all versions, download history and stored artifacts. Agents can no longer install it.</p>
             </div>` : '';
 
         document.getElementById('drawer-body').innerHTML = `
@@ -828,7 +828,7 @@
         else alert((res && res.detail) || 'Failed');
     }
     async function deletePlugin() {
-        if (!confirm(`Delete "${currentPluginName}" and all its versions? This cannot be undone.`)) return;
+        if (!confirm(`Permanently delete "${currentPluginName}"? All versions, download history and stored artifacts are erased. This cannot be undone.`)) return;
         const res = await api('DELETE', `/api/marketplaces/${currentMp.slug}/plugins/${currentPluginName}`);
         if (res && res.status === 'deleted') { closePluginDrawer(); await refreshAfterPluginChange(); }
         else { alert((res && res.detail) || 'Delete failed'); }

@@ -36,6 +36,15 @@ def store(sha256: str, data: bytes) -> Path:
     return dest
 
 
+def delete(sha256: str) -> bool:
+    """Remove artifact bytes from disk. Idempotent; returns True if a file was removed."""
+    path = _path_for(sha256)
+    if not path.exists():
+        return False
+    path.unlink()
+    return True
+
+
 def read(sha256: str) -> bytes:
     path = _path_for(sha256)
     if not path.exists():

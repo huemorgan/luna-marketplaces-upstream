@@ -391,19 +391,62 @@ async def delete_plugin(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Remove a plugin and all its versions from the catalog.
+    """Permanently delete a plugin: all versions, its usage-event history, and
+    its artifact bytes.
 
-    Artifact bytes are content-addressed and may be shared across marketplaces,
-    so they are left on disk (harmless orphans); only catalog rows are removed.
+    Artifacts are content-addressed and may back other plugins' versions (any
+    marketplace), so bytes are only removed once no PluginVersion references
+    the hash.
     """
     mp, p = await _get_plugin_for_editor(mp_slug, plugin_name, user, db)
 
     versions = await db.execute(select(PluginVersion).where(PluginVersion.plugin_id == p.id))
+    hashes: set[str] = set()
+    versions_removed = 0
     for v in versions.scalars():
+        hashes.add(v.artifact_hash)
         await db.delete(v)
+        versions_removed += 1
     await db.delete(p)
+    await db.flush()
+
+    orphaned: list[str] = []
+    for h in hashes:
+        still_used = await db.execute(
+            select(PluginVersion.id).where(PluginVersion.artifact_hash == h).limit(1)
+        )
+        if still_used.scalar_one_or_none() is not None:
+            continue
+        artifact_row = await db.get(Artifact, h)
+        if artifact_row is not None:
+            await db.delete(artifact_row)
+        orphaned.append(h)
+
+    events = await db.execute(
+        select(UsageEvent).where(
+            UsageEvent.marketplace_id == mp.id,
+            UsageEvent.plugin_name == f"{p.namespace}/{p.name}",
+        )
+    )
+    events_purged = 0
+    for e in events.scalars():
+        await db.delete(e)
+        events_purged += 1
+
     await db.commit()
-    return {"status": "deleted", "plugin": f"{mp.slug}/{plugin_name}"}
+
+    # Unlink bytes only after the rows are durably gone; a failed commit must
+    # not leave live versions pointing at missing files.
+    for h in orphaned:
+        storage.delete(h)
+
+    return {
+        "status": "deleted",
+        "plugin": f"{mp.slug}/{plugin_name}",
+        "versions_removed": versions_removed,
+        "artifacts_purged": len(orphaned),
+        "events_purged": events_purged,
+    }
 
 
 @router.post("/marketplaces/{mp_slug}/plugins/{plugin_name}/versions/{version}/yank")
