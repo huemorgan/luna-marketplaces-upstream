@@ -1,0 +1,70 @@
+name = "plugin-telegram"
+shown_name = "Telegram"
+version = "0.2.0"
+description = "Connect Luna to Telegram through an official Bot API gateway."
+entry = "plugin_telegram"
+sdk_version = "0"
+license = "MIT"
+category = "connectors"
+icon = "send"
+tags = ["connector", "telegram", "messaging", "bot-api"]
+readme = """
+# plugin-telegram
+
+Connects Luna to Telegram through the separate **luna-tg-gateway**. The gateway
+owns the Telegram bot token and webhook. This plugin accepts HMAC-signed normalized
+updates, stores an attributed cross-chat context window, applies DM/group activation
+policy, runs Luna, and delivers text, media, replies, typing actions, and reactions.
+
+Hosted Luna users paste a BotFather token once in Settings; the token is exchanged
+server-side and never stored by the plugin. Self-hosted users configure
+`plugin_telegram.gateway_url`, `plugin_telegram.account_id`, and
+`plugin_telegram.shared_secret`. `plugin_telegram.allowed_chat_ids` optionally
+restricts DMs.
+
+The plugin imports `luna_sdk` only. It never stores a bot token or calls Telegram.
+"""
+
+[requires]
+tools = 5
+depends_on = ["plugin-vault"]
+env = [
+    "LUNA_TELEGRAM_GATEWAY_URL",
+    "LUNA_TELEGRAM_ACCOUNT_ID",
+    "LUNA_TELEGRAM_SHARED_SECRET",
+]
+vault = [
+    "plugin_telegram.gateway_url",
+    "plugin_telegram.account_id",
+    "plugin_telegram.shared_secret",
+]
+
+[[tools]]
+name = "tg_send"
+description = "Send Telegram text to a numeric ID or known chat."
+policy = "prompt_always"
+risk_level = "medium"
+
+[[tools]]
+name = "tg_send_media"
+description = "Send native Telegram media to a numeric ID or known chat."
+policy = "prompt_always"
+risk_level = "medium"
+
+[[tools]]
+name = "tg_react"
+description = "React to a known Telegram message."
+policy = "prompt_always"
+risk_level = "low"
+
+[[tools]]
+name = "tg_list_chats"
+description = "List recent Telegram chats known from plugin history."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "tg_status"
+description = "Check Telegram bot, gateway, and webhook health."
+policy = "auto_approve"
+risk_level = "low"
