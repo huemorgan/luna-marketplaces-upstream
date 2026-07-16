@@ -38,7 +38,7 @@ from .models.db import (
 # Stable identifiers so Luna's pinned marketplace id never changes across deploys.
 OFFICIAL_MP_ID = "00000000-0000-4000-8000-000000000001"
 OFFICIAL_MP_SLUG = "official"
-OFFICIAL_MP_NAME = "Luna Official (dev)"
+OFFICIAL_MP_NAME = "Luna-Marketplace"
 OFFICIAL_ORG_ID = "00000000-0000-4000-8000-0000000000a1"
 OFFICIAL_ORG_SLUG = "luna-official"
 CORE_USER_ID = "00000000-0000-4000-8000-0000000000b1"
@@ -83,6 +83,9 @@ async def _ensure_official(db: AsyncSession) -> Marketplace:
             created_at=now_ts(),
         )
         db.add(mp)
+    elif mp.name != OFFICIAL_MP_NAME:
+        # Keep the display name in sync with the repo across deploys.
+        mp.name = OFFICIAL_MP_NAME
 
     await db.flush()
     return mp
