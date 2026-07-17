@@ -1,5 +1,6 @@
 name = "plugin-web-access"
-version = "0.2.0"
+shown_name = "Web Access"
+version = "0.2.4"
 description = "Web search (Tavily/Google), page fetch, and HTTP client — live internet access."
 entry = "plugin_web_access"
 sdk_version = "0"
@@ -14,9 +15,10 @@ Gives the Luna agent eyes on the internet:
 - `web_fetch` — fetch a URL and return its readable text (chrome stripped).
 - `http_request` — generic HTTP client for calling REST APIs.
 
-API keys resolve **vault-first** (`ctx.vault`) with env-var fallback
-(`LUNA_TAVILY_API_KEY`, `LUNA_GOOGLE_SEARCH_API_KEY`, `LUNA_GOOGLE_SEARCH_CX`,
-`LUNA_WEB_SEARCH_PROVIDER`). Built against `luna_sdk` v0 — no `import luna.*`.
+Tavily resolves via ``vault.connect("tavily")`` (real BYOK or hosted gateway
+virtual key), then env fallback (`LUNA_TAVILY_API_KEY` /
+`LUNA_TAVILY_BASE_URL`). Google still uses vault credential names + env.
+Built against `luna_sdk` v0 — no `import luna.*`.
 
 Source: https://github.com/huemorgan/plugin-web-access
 """
