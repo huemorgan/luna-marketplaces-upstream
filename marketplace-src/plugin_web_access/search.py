@@ -1,11 +1,16 @@
-"""Web search backends for plugin-web-access (005.902).
+"""Web search backends for plugin-web-access (005.902 / 008.991).
 
 Two providers behind one interface: Tavily (default, agent-tuned) and Google
-Custom Search. Provider + keys come from env for this slice
-(`LUNA_WEB_SEARCH_PROVIDER`, `LUNA_TAVILY_API_KEY`, `LUNA_GOOGLE_SEARCH_API_KEY`,
-`LUNA_GOOGLE_SEARCH_CX`); a Settings-UI/vault-backed selector is the deferred
-slice (see NOTES.md). Core functions take an `httpx.AsyncClient` so tests can
-inject an `httpx.MockTransport` — no real network, no extra deps.
+Custom Search. Credential resolution for Tavily:
+
+1. ``vault.connect("tavily")`` — real BYOK or virtual gateway key (preferred)
+2. Env fallback ``LUNA_TAVILY_API_KEY`` (+ optional ``LUNA_TAVILY_BASE_URL``)
+
+Critical: Tavily prefers a JSON-body ``api_key`` over ``Authorization``. When
+the secret is a gateway device token (``lsv1-…`` / virtual connection), putting
+it in the body makes upstream 401 even though the proxy injects a valid Bearer
+header. Virtual connections therefore omit body ``api_key`` and auth via header
+only; real/env keys keep the classic body ``api_key`` shape.
 """
 
 from __future__ import annotations
@@ -15,7 +20,8 @@ from typing import Any
 
 import httpx
 
-TAVILY_DEFAULT_ENDPOINT = "https://api.tavily.com/search"
+TAVILY_DEFAULT_ORIGIN = "https://api.tavily.com"
+TAVILY_DEFAULT_ENDPOINT = f"{TAVILY_DEFAULT_ORIGIN}/search"
 GOOGLE_ENDPOINT = "https://www.googleapis.com/customsearch/v1"
 DEFAULT_TIMEOUT = 20.0
 
@@ -55,6 +61,11 @@ def tavily_endpoint() -> str:
     return base if base.endswith("/search") else f"{base}/search"
 
 
+def _search_url(base_url: str) -> str:
+    base = (base_url or TAVILY_DEFAULT_ORIGIN).rstrip("/")
+    return base if base.endswith("/search") else f"{base}/search"
+
+
 # Back-compat alias for existing imports/tests.
 TAVILY_ENDPOINT = TAVILY_DEFAULT_ENDPOINT
 
@@ -66,9 +77,18 @@ def _clamp(n: Any, lo: int, hi: int, default: int) -> int:
         return default
 
 
+def _normalize_results(data: dict[str, Any]) -> dict[str, Any]:
+    results = [
+        {"title": r.get("title", ""), "url": r.get("url", ""), "content": (r.get("content") or "")[:1000]}
+        for r in (data.get("results") or [])
+    ]
+    return {"answer": data.get("answer") or "", "results": results}
+
+
 async def tavily_search(
     client: httpx.AsyncClient, api_key: str, query: str, max_results: int
 ) -> dict[str, Any]:
+    """Direct / env-key search: classic body ``api_key`` (back-compat)."""
     payload = {
         "api_key": api_key,
         "query": query,
@@ -78,12 +98,71 @@ async def tavily_search(
     }
     resp = await client.post(tavily_endpoint(), json=payload)
     resp.raise_for_status()
-    data = resp.json()
-    results = [
-        {"title": r.get("title", ""), "url": r.get("url", ""), "content": (r.get("content") or "")[:1000]}
-        for r in (data.get("results") or [])
-    ]
-    return {"answer": data.get("answer") or "", "results": results}
+    return _normalize_results(resp.json())
+
+
+async def _tavily_via_connection(
+    client: httpx.AsyncClient,
+    conn: Any,
+    query: str,
+    max_results: int,
+) -> dict[str, Any]:
+    """Search using a vault Connection (real BYOK or virtual gateway)."""
+    headers: dict[str, str] = {}
+    params: dict[str, str] = {}
+    apply = getattr(conn, "apply", None)
+    if callable(apply):
+        apply(headers, params)
+
+    payload: dict[str, Any] = {
+        "query": query,
+        "max_results": max_results,
+        "include_answer": True,
+        "search_depth": "basic",
+    }
+    # Virtual keys are device tokens — body api_key would beat the proxy's
+    # injected Bearer and 401 at Tavily. Real keys keep body auth for back-compat.
+    source = getattr(conn, "source", "real")
+    secret = getattr(conn, "secret", "") or ""
+    if source != "virtual" and secret:
+        payload["api_key"] = secret
+
+    url = _search_url(getattr(conn, "base_url", None) or TAVILY_DEFAULT_ORIGIN)
+    resp = await client.post(url, json=payload, headers=headers, params=params or None)
+    resp.raise_for_status()
+    return _normalize_results(resp.json())
+
+
+async def _resolve_tavily_connection(vault: Any | None) -> Any | None:
+    """Prefer vault.connect (008.991); degrade silently on older SDKs."""
+    if vault is None:
+        return None
+    connect_fn = getattr(vault, "connect", None)
+    if not callable(connect_fn):
+        return None
+    try:
+        from luna_sdk import AuthSpec
+    except Exception:  # noqa: BLE001 — marketplace plugin must run on older SDKs
+        return None
+    try:
+        return await connect_fn(
+            "tavily",
+            upstream_default=TAVILY_DEFAULT_ORIGIN,
+            auth=AuthSpec(location="header", name="Authorization", scheme="Bearer"),
+            credential_name="tavily_api_key",
+        )
+    except TypeError:
+        # Older connect() without credential_name kwarg.
+        try:
+            return await connect_fn(
+                "tavily",
+                upstream_default=TAVILY_DEFAULT_ORIGIN,
+                auth=AuthSpec(location="header", name="Authorization", scheme="Bearer"),
+            )
+        except Exception:  # noqa: BLE001
+            return None
+    except Exception:  # noqa: BLE001 — discovery/gateway optional
+        return None
 
 
 async def google_search(
@@ -110,8 +189,9 @@ async def run_search(
     """Dispatch a search to the configured provider. Never raises — returns an
     error dict the agent can read and relay (missing key, HTTP error, etc.).
 
-    005.906: vault-first credential resolution. Keys are looked up in the vault
-    first, falling back to env vars for deployment/infra scenarios.
+    005.906: vault-first credential resolution.
+    008.991: Tavily also resolves via ``vault.connect`` so gateway virtual keys
+    work without a local ``tavily_api_key`` row.
     """
     resolve_credential = _resolve_credential
 
@@ -136,14 +216,19 @@ async def run_search(
                 }
             out = await google_search(client, key, cx, query, n)
         else:
-            key = await resolve_credential("tavily_api_key", "LUNA_TAVILY_API_KEY", vault)
-            if not key:
-                return {
-                    "error": "web_search is not configured",
-                    "detail": "Store tavily_api_key in Settings → Credentials "
-                    "(get a key at https://tavily.com), or set LUNA_TAVILY_API_KEY env var.",
-                }
-            out = await tavily_search(client, key, query, n)
+            conn = await _resolve_tavily_connection(vault)
+            if conn is not None:
+                out = await _tavily_via_connection(client, conn, query, n)
+            else:
+                key = await resolve_credential("tavily_api_key", "LUNA_TAVILY_API_KEY", vault)
+                if not key:
+                    return {
+                        "error": "web_search is not configured",
+                        "detail": "Store tavily_api_key in Settings → Credentials "
+                        "(get a key at https://tavily.com), connect the tavily "
+                        "gateway key, or set LUNA_TAVILY_API_KEY env var.",
+                    }
+                out = await tavily_search(client, key, query, n)
             provider = "tavily"
     except httpx.HTTPStatusError as exc:
         return {"error": "search request failed", "detail": f"HTTP {exc.response.status_code}", "query": query, "provider": provider}
