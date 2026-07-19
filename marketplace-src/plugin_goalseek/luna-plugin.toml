@@ -1,0 +1,138 @@
+# Data manifest — read by the marketplace + installer WITHOUT importing Python.
+# Keep in sync with the PluginManifest in __init__.py (name, version, tools).
+
+name = "plugin-goalseek"
+version = "0.6.0"
+description = "Durable, governed goal lifecycles: concrete outcomes with a definition of done, explicit terminal outcomes, and an honest evidence trail."
+entry = "plugin_goalseek"
+sdk_version = "0"
+license = "MIT"
+tags = ["goals", "automation", "autonomy"]
+readme = """
+# plugin-goalseek
+
+The outcome-driven layer between curiosity (open-ended missions) and
+playbooks (fixed procedures): durable goal lifecycles with a definition of
+done, a stage machine, five base terminal outcomes plus per-goal business
+labels, and an append-only evidence trail.
+
+## Tools
+- `goal_open(statement, definition_of_done, ...)` — open a goal lifecycle
+  (agent self-opens go through an approval card or the standing grant)
+- `goal_get(goal_id)` — full goal state: steps, facts, recent evidence
+- `goal_list(stage?, include_closed?)` — the board
+- `goal_update(goal_id, ...)` — statement/stage/steps/notes
+- `goal_fact_set(goal_id, key, value)` — structured goal knowledge
+- `goal_close(goal_id, outcome, reason)` — explicit terminal outcome (approval-gated)
+- `goal_effect(goal_id, tool, intent, args, ...)` — the governed door: policy
+  gate (8 families) → execute → evidence triple; blocks return a remedy.
+  Effect kinds: `tool_call` (one tool) and `playbook_run` (fire a whole
+  playbook as one governed step — feature-detected, needs plugin-playbooks;
+  a failed run is never a confirmed step)
+- `goal_policy_set(family, params, goal_id?)` — add/update policy rules (approval-gated)
+- `goal_grant_revoke(key)` — revoke a persistent grant (approval-gated)
+- `goal_wait(goal_id, description, kind, ...)` — park until owner reply /
+  a time / a fact arrives; the goal resumes itself
+- `goal_wait_resolve(wait_id)` — resolve or cancel a wait
+- `goal_note(goal_id, title, body_md)` — durable narrative knowledge
+
+With plugin-scheduler installed, each active goal runs a heartbeat trigger
+(default daily, per-goal cadence) so goals make progress while the owner
+sleeps. Without it, goals still work fully in chat.
+
+## Knowledge model (the wiki seam)
+
+Narrative knowledge flows to the best backend present — same call, no
+caller-visible difference:
+
+| Installed | Where notes/pages land |
+|---|---|
+| plugin-curiosity with a bound mission wiki | that mission wiki (goal pages sit in its graph) |
+| plugin-wiki only | Goal-Seek's own `goalseek` wiki |
+| neither | local `goalseek_notes` table |
+
+Goal pages (`goal-<id>`) carry the statement, definition of done, business
+end-states and the outcome. Namespaced facts (`contact-jane/working_hours`)
+also land on domain pages (`contact-jane` § working_hours), and the policy
+gate's `requires_facts` reads those pages back — knowledge learned by one
+goal tunes the next.
+
+Source: https://github.com/huemorgan/plugin-goalseek
+"""
+
+depends_on = ["plugin-scheduler"]
+
+[requires]
+tools = 12
+
+[[tools]]
+name = "goal_open"
+description = "Open a goal lifecycle with a definition of done and optional business outcome labels."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "goal_get"
+description = "Read one goal in full: stage, steps, facts, recent evidence."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "goal_list"
+description = "List goals (open by default; filter by stage; include_closed for history)."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "goal_update"
+description = "Update a goal: fields, stage transitions, plan steps, progress notes."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "goal_fact_set"
+description = "Store or update a structured goal fact (agent authority only)."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "goal_close"
+description = "Close a goal with an explicit terminal outcome and structured reason."
+policy = "prompt_always"
+risk_level = "medium"
+
+[[tools]]
+name = "goal_effect"
+description = "Take a consequential action for a goal through the policy gate; blocks return a remedy."
+policy = "auto_approve"
+risk_level = "medium"
+
+[[tools]]
+name = "goal_policy_set"
+description = "Add or update a policy rule (global or goal-scoped)."
+policy = "prompt_always"
+risk_level = "medium"
+
+[[tools]]
+name = "goal_grant_revoke"
+description = "Revoke a persistent goal-seek grant."
+policy = "prompt_always"
+risk_level = "high"
+
+[[tools]]
+name = "goal_wait"
+description = "Park a goal until an owner reply, a time, or a fact arrives; it resumes itself."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "goal_wait_resolve"
+description = "Resolve or cancel an open goal wait."
+policy = "auto_approve"
+risk_level = "low"
+
+[[tools]]
+name = "goal_note"
+description = "Write durable narrative goal knowledge to the wiki (or local notes when no wiki is installed)."
+policy = "auto_approve"
+risk_level = "low"
